@@ -19,7 +19,8 @@ async function bootstrap(): Promise<void> {
   app.enableCors({ origin, credentials: false });
   app.enableShutdownHooks();
   const port = Number(process.env.API_PORT ?? 4000);
-  await app.listen(port);
+  // API_HOST=127.0.0.1 e mban API-n të padukshme nga interneti kur web-i është në të njëjtin server.
+  await app.listen(port, process.env.API_HOST ?? '0.0.0.0');
   console.log(`Temaj ERP API në portin ${port}`);
 }
 bootstrap().catch((e) => { console.error(e); process.exit(1); });

@@ -68,3 +68,50 @@ jobs:
             set -a; . ./.env.prove; set +a
             node -e "fetch('http://localhost:3000/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'demo@temaj.test',password:process.env.SEED_DEMO_PASSWORD})}).then(async r=>{const b=await r.json();if(!b.token){console.error(b);process.exit(1)}console.log('Hyrja me përdoruesin demo funksionon')})"
             grep -q 'demo@temaj.test' HYRJA.txt
+
+  # Provon instalimin në një server Ubuntu ku punon tashmë një faqe tjetër pas Caddy (si porosi.transportitemaj.com):
+  # instalon, hyn në sistem, përsërit instalimin si përditësim dhe verifikon që faqja ekzistuese nuk preket.
+  vps:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: scripts/package-vps.sh "$PWD/temaj-erp.zip"
+      - name: Përgatit një server me një faqe ekzistuese pas Caddy
+        run: |
+          sudo apt-get install -y -qq debian-keyring debian-archive-keyring apt-transport-https curl gnupg
+          curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+          curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null
+          sudo apt-get update -y -qq && sudo apt-get install -y -qq caddy
+          printf 'porosi.localhost {\n\trespond "faqja ekzistuese"\n}\n' | sudo tee /etc/caddy/Caddyfile >/dev/null
+          sudo systemctl restart caddy
+          sleep 2
+          curl -sk --resolve porosi.localhost:443:127.0.0.1 https://porosi.localhost | grep -q "faqja ekzistuese"
+      - name: Instalimi i parë
+        run: |
+          sudo unzip -q -o temaj-erp.zip -d /root
+          sudo bash /root/temaj-erp/install.sh erp.localhost
+      - name: Verifikimi
+        run: |
+          set -e
+          PW=$(sudo awk '/^Fjalëkalimi:/ {print $2; exit}' /root/temaj-erp/HYRJA.txt)
+          login() { curl -sk --resolve erp.localhost:443:127.0.0.1 https://erp.localhost/api/auth/login -H 'Content-Type: application/json' -d "{\"email\":\"demo@temaj.test\",\"password\":\"$PW\"}"; }
+          login | grep -q '"token"' && echo "Hyrja përmes HTTPS funksionon"
+          curl -sk --resolve erp.localhost:443:127.0.0.1 https://erp.localhost/hyrja | grep -q "Temaj ERP"
+          curl -sk --resolve porosi.localhost:443:127.0.0.1 https://porosi.localhost | grep -q "faqja ekzistuese" && echo "Faqja ekzistuese vazhdon të punojë"
+          # API-ja nuk duhet të jetë e arritshme nga jashtë: dëgjon vetëm në 127.0.0.1.
+          sudo ss -ltnp | grep ':4100' | grep -q '127.0.0.1' && echo "API-ja dëgjon vetëm lokalisht"
+          sudo test "$(sudo stat -c %a /root/temaj-erp/.env)" = 600
+          # Përditësimi: i njëjti instalim sërish nuk i ndryshon fjalëkalimet as të dhënat, dhe nuk e dyfishon faqen te Caddy.
+          sudo unzip -q -o temaj-erp.zip -d /root
+          sudo bash /root/temaj-erp/install.sh erp.localhost
+          login | grep -q '"token"' && echo "Pas përditësimit hyrja funksionon me të njëjtin fjalëkalim"
+          test "$(sudo grep -c 'erp.localhost' /etc/caddy/Caddyfile)" = 1
+          sudo test -x /etc/cron.daily/temaj-erp-kopje && sudo /etc/cron.daily/temaj-erp-kopje && sudo ls /root/kopje/erp | grep -q 'sql.gz' && echo "Kopja rezervë krijohet"
+      - name: Log-et në rast dështimi
+        if: failure()
+        run: sudo journalctl -u temaj-erp-api -u temaj-erp-web -u caddy -n 80 --no-pager
