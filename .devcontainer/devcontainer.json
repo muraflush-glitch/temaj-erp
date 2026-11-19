@@ -1,0 +1,14 @@
+{
+  "name": "Temaj ERP — mjedis provë",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/temaj-erp",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": { "label": "Temaj ERP", "onAutoForward": "openBrowser" },
+    "4000": { "label": "API (i brendshëm)", "onAutoForward": "silent" }
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "bash .devcontainer/start.sh",
+  "postAttachCommand": "cat HYRJA.txt 2>/dev/null || true"
+}

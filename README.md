@@ -38,6 +38,10 @@ Specifikimi i plotë (880 kërkesa, 172 vendime, 24 çështje të hapura) ësht�
 | Kthimet me nota krediti, pagesat ndaj furnitorëve (me aprovim), raportet | migrimet 009–010, `src/billing`, `src/purchasing`, `src/reports` |
 | Njoftimet: **SIMULIM vetëm në Development** (`dev_notification_sink`); ofruesi real pret OPEN-18/19 | `src/outbox/dev-notification.sink.ts` |
 
+## Mënyra më e shpejtë për ta parë: GitHub Codespaces
+Te faqja e repository-t në GitHub: **Code → Codespaces → Create codespace on main**. Pas disa minutash sistemi hapet vetë në shfletues.
+Përdoruesi dhe fjalëkalimi shkruhen te skedari `HYRJA.txt` (krijohet vetë, nuk ruhet në Git). Vetëm të dhëna testuese.
+
 ## Nisja lokale
 ```bash
 npm install
