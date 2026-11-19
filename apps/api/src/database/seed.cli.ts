@@ -10,8 +10,8 @@ async function main(): Promise<void> {
   }
   const pool = createPool(url);
   try {
-    await seed(pool, { adminPassword, approverPassword });
-    console.log('Të dhënat sintetike u ngarkuan: admin@temaj.test, aprovues@temaj.test');
+    await seed(pool, { adminPassword, approverPassword, demoPassword: process.env.SEED_DEMO_PASSWORD });
+    console.log(`Të dhënat sintetike u ngarkuan: admin@temaj.test, aprovues@temaj.test${process.env.SEED_DEMO_PASSWORD ? ', demo@temaj.test' : ''}`);
   } finally {
     await pool.end();
   }

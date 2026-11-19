@@ -56,3 +56,9 @@ After each Claude development session, append a dated entry including source has
 - Ndërtuar: furnitorët, porositë e blerjes me aprovim mbi prag, pranimet e mallit, përputhja tripalëshe e faturave.
 - Teste: 133/133 kaluan. Detajet: `docs/progress/2026-11-19-blerjet.md`.
 - Pa pagesa, kosto importi, valuta të huaja apo kontabilizim. OPEN-03/06/08 të pandryshuara.
+
+## 2026-11-19 — Faturimi, arkëtimet dhe formularët (PROVIZOR, Development)
+- Me kërkesë të pronarit, TVSH-ja (18 %), rrumbullakimi dhe llogaritë u vendosën si vlera provizore, të shënuara; Production bllokohet derisa të miratohen.
+- Ndërtuar: fatura shitjeje me kontabilizim, arkëtime, limit krediti, formularë në ekran, test me Chrome.
+- Teste: 150/150 + 15 hapa në shfletues. Detajet: `docs/progress/2026-11-19-faturimi-provizor.md`.
+- OPEN-05/06 mbeten të hapura: vlerat provizore nuk janë vendime të miratuara.

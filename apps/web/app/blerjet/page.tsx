@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useMe } from '@/lib/useMe';
+import { money, qty } from '@/lib/util';
 import { Nav } from '../Nav';
 
 interface Po { id: string; status: string; branch: string; supplier_name: string; created: string; total: string }
@@ -12,8 +13,6 @@ interface Detail {
 }
 const STATUS: Record<string, string> = { DRAFT: 'Draft', PENDING_APPROVAL: 'Pret aprovim', APPROVED: 'Aprovuar', PARTIALLY_RECEIVED: 'Pranuar pjesërisht', RECEIVED: 'Pranuar', CANCELLED: 'Anuluar' };
 const DISC: Record<string, string> = { QTY_EXCEEDS_RECEIVED: 'sasia e faturuar kalon mallin e pranuar', PRICE_MISMATCH: 'çmimi ndryshon nga porosia', LINE_NOT_ON_ORDER: 'rreshti nuk është në porosi' };
-const money = (s: string): string => { const [i = '0', f = ''] = s.split('.'); return `${i.replace(/\B(?=(\d{3})+(?!\d))/g, '.')},${(f + '00').slice(0, 2)} €`; };
-const qty = (s: string): string => s.replace(/\.?0+$/, '').replace('.', ',') || '0';
 
 export default function PurchasingPage() {
   const { me } = useMe();

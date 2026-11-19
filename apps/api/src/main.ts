@@ -2,8 +2,15 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
+import { assertNoProvisionalPolicies } from './billing/billing.service';
+import { createPool } from './database/db';
 
 async function bootstrap(): Promise<void> {
+  if (process.env.APP_ENV === 'production') {
+    // Production nuk niset me rregulla tatimore/kontabël provizore.
+    const pool = createPool(process.env.DATABASE_URL ?? '');
+    try { await assertNoProvisionalPolicies(pool); } finally { await pool.end(); }
+  }
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   // Pas load balancer-it duhet numri i saktë i proxy-ve, përndryshe IP-ja e klientit mund të falsifikohet.
   if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY));

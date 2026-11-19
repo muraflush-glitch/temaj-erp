@@ -113,6 +113,27 @@ export class LedgerService implements OnModuleInit {
     return entryNo;
   }
 
+  /**
+   * Regjistrim automatik nga një modul tjetër (faturë, arkëtim), brenda transaksionit të dokumentit burim.
+   * Lejet i ka kontrolluar moduli thirrës; balanca, periudha dhe llogaritë kontrollohen nga databaza si për çdo regjistrim.
+   */
+  async postSystemEntry(tx: Tx, userId: number, e: { legalEntityId: number; entryDate: string; description: string; sourceType: string; sourceRef: string;
+    idempotencyKey: string; lines: { accountId: number; branchId: number | null; debit: string; credit: string }[] }): Promise<number> {
+    const r = await one<{ id: string }>(tx,
+      `INSERT INTO journal_entry(legal_entity_id, entry_date, description, source_type, source_ref, created_by, idempotency_key)
+       VALUES ($1, $2::date, $3, $4, $5, $6, $7) RETURNING id`,
+      [e.legalEntityId, e.entryDate, e.description, e.sourceType, e.sourceRef, userId, e.idempotencyKey]);
+    const id = Number(r?.id);
+    let no = 0;
+    for (const l of e.lines) {
+      if (/^0+(\.0+)?$/.test(l.debit) && /^0+(\.0+)?$/.test(l.credit)) continue;   // rreshtat zero (p.sh. TVSH 0) nuk regjistrohen
+      await tx.query('INSERT INTO journal_line(entry_id, line_no, account_id, branch_id, debit, credit) VALUES ($1, $2, $3, $4, $5::numeric, $6::numeric)',
+        [id, ++no, l.accountId, l.branchId, l.debit, l.credit]);
+    }
+    await this.postInTx(tx, userId, id);
+    return id;
+  }
+
   async deleteDraft(actor: AuthUser, entryId: number): Promise<void> {
     await withTransaction(this.db, async (tx) => {
       const e = await one<{ status: string; created_by: string }>(tx, 'SELECT status, created_by FROM journal_entry WHERE id = $1 FOR UPDATE', [entryId]);

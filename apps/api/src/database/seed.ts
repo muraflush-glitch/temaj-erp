@@ -35,6 +35,8 @@ export const PERMISSIONS: [string, string][] = [
   ['sales.order.confirm', 'Konfirmo ose anulo porosi'],
   ['sales.deliver', 'Dorëzo mallin e porosive'],
   ['approvals.sales.decide', 'Aprovo përjashtimet e shitjes (zbritje, çmim, nuanca)'],
+  ['sales.invoice.create', 'Lësho fatura shitjeje'],
+  ['payments.receive', 'Regjistro arkëtime nga klientët'],
   ['suppliers.manage', 'Krijo dhe ndrysho furnitorë'],
   ['purchase.read', 'Shiko porositë e blerjes'],
   ['purchase.order.create', 'Krijo dhe dërgo porosi blerjeje'],
@@ -51,6 +53,7 @@ export const ROLES: { code: string; name: string; permissions: string[] }[] = [
   { code: 'PURCHASER', name: 'Blerës', permissions: ['org.read', 'stock.read', 'purchase.read', 'suppliers.manage', 'purchase.order.create'] },
   { code: 'PURCHASE_APPROVER', name: 'Aprovues blerjesh', permissions: ['org.read', 'purchase.read', 'approvals.purchase.decide'] },
   { code: 'AP_CLERK', name: 'Financë — faturat e furnitorëve', permissions: ['org.read', 'purchase.read', 'purchase.invoice.enter'] },
+  { code: 'CASHIER', name: 'Arkëtar', permissions: ['org.read', 'customers.read', 'sales.read', 'sales.invoice.create', 'payments.receive'] },
   { code: 'SALESPERSON', name: 'Shitës', permissions: ['org.read', 'stock.read', 'customers.read', 'customers.manage', 'sales.read', 'sales.order.create', 'sales.order.confirm'] },
   { code: 'SALES_MANAGER', name: 'Menaxher shitjesh', permissions: ['org.read', 'stock.read', 'customers.read', 'customers.manage', 'customers.credit.manage', 'pricing.manage', 'sales.read', 'approvals.sales.decide'] },
   { code: 'WAREHOUSE_KEEPER', name: 'Magazinier', permissions: ['org.read', 'stock.read', 'sales.read', 'sales.deliver', 'purchase.read', 'stock.receive', 'stock.dispatch', 'stock.transfer.dispatch', 'stock.transfer.receive', 'stock.adjust.request'] },
@@ -62,14 +65,17 @@ export const ROLES: { code: string; name: string; permissions: string[] }[] = [
 export const TEST_ACCOUNTS: [string, string, string][] = [
   ['T-1000', 'Arka (test)', 'ASSET'],
   ['T-1100', 'Banka (test)', 'ASSET'],
+  ['T-1200', 'Klientë — të arkëtueshme (test)', 'ASSET'],
   ['T-1300', 'Avanse ndaj punonjësve (test)', 'ASSET'],
   ['T-2000', 'Detyrime ndaj furnitorëve (test)', 'LIABILITY'],
+  ['T-2300', 'Avanse nga klientët (test)', 'LIABILITY'],
+  ['T-2400', 'TVSH e llogaritur (test)', 'LIABILITY'],
   ['T-3000', 'Kapitali (test)', 'EQUITY'],
   ['T-4000', 'Të ardhura (test)', 'REVENUE'],
   ['T-6000', 'Shpenzime bonusesh (test)', 'EXPENSE'],
 ];
 
-export async function seed(pool: Pool, opts: { adminPassword: string; approverPassword: string }): Promise<void> {
+export async function seed(pool: Pool, opts: { adminPassword: string; approverPassword: string; demoPassword?: string }): Promise<void> {
   if (process.env.APP_ENV === 'production') throw new Error('Seed-i sintetik është i ndaluar në Production');
   const c = await pool.connect();
   try {
@@ -140,8 +146,20 @@ export async function seed(pool: Pool, opts: { adminPassword: string; approverPa
     }
     await c.query(
       `INSERT INTO fiscal_period(legal_entity_id, name, start_date, end_date)
-       SELECT $1, 'Nëntor 2026 (test)', DATE '2026-11-01', DATE '2026-11-30'
-        WHERE NOT EXISTS (SELECT 1 FROM fiscal_period WHERE legal_entity_id = $1)`, [leId]);
+       SELECT $1, 'Muaji aktual (test)', date_trunc('month', CURRENT_DATE)::date, (date_trunc('month', CURRENT_DATE) + interval '1 month - 1 day')::date
+        WHERE NOT EXISTS (SELECT 1 FROM fiscal_period WHERE legal_entity_id = $1 AND CURRENT_DATE BETWEEN start_date AND end_date)`, [leId]);
+    // VLERA PROVIZORE, të vendosura me kërkesë të pronarit për t'u korrigjuar më vonë nga kontabilisti (OPEN-05, OPEN-06).
+    await c.query(
+      `INSERT INTO policy_setting(key, value, description) VALUES
+         ('vat.standard_rate', '{"pct": "18"}', 'Norma standarde e TVSH-së — PROVIZORE, pa verifikim nga kontabilisti'),
+         ('money.rounding', '{"decimals": 2, "mode": "half_away_from_zero", "level": "line"}', 'Rrumbullakimi i vlerave në fatura — PROVIZOR')
+       ON CONFLICT (key) DO NOTHING`);
+    await c.query(
+      `INSERT INTO account_role(legal_entity_id, role, account_id)
+       SELECT $1, m.role, a.id FROM (VALUES ('RECEIVABLE', 'T-1200'), ('SALES_REVENUE', 'T-4000'), ('VAT_OUTPUT', 'T-2400'),
+                                            ('CASH', 'T-1000'), ('BANK', 'T-1100'), ('CUSTOMER_ADVANCES', 'T-2300')) AS m(role, code)
+         JOIN ledger_account a ON a.legal_entity_id = $1 AND a.code = m.code
+       ON CONFLICT DO NOTHING`, [leId]);
 
     const users: [string, string, string, string][] = [
       ['admin@temaj.test', 'Administrator (test)', opts.adminPassword, 'SYSTEM_ADMIN'],
@@ -155,6 +173,21 @@ export async function seed(pool: Pool, opts: { adminPassword: string; approverPa
         `INSERT INTO user_role(user_id, role_id, branch_id)
          SELECT $1, id, NULL FROM role WHERE code = $2
          ON CONFLICT DO NOTHING`, [u.rows[0]?.id, roleCode]);
+    }
+    // VETËM PËR DEMONSTRIM NË DEVELOPMENT: një përdorues me të gjitha rolet operative, që rrjedha të provohet nga një ekran.
+    // Në punë reale këto role i mbajnë persona të ndryshëm (ndarja e detyrave).
+    if (opts.demoPassword) {
+      const d = await c.query<{ id: string }>(
+        `INSERT INTO app_user(email, display_name, password_hash) VALUES ('demo@temaj.test', 'Demo (të gjitha rolet)', $1)
+         ON CONFLICT (email) DO UPDATE SET display_name = EXCLUDED.display_name RETURNING id`, [await hashPassword(opts.demoPassword)]);
+      await c.query(
+        `INSERT INTO user_role(user_id, role_id, branch_id)
+         SELECT $1, id, NULL FROM role WHERE code IN ('SALESPERSON', 'WAREHOUSE_KEEPER', 'CASHIER', 'CATALOG_MANAGER', 'PURCHASER', 'ACCOUNTANT', 'AP_CLERK')
+         ON CONFLICT DO NOTHING`, [d.rows[0]?.id]);
+      await c.query(
+        `INSERT INTO product_price(product_id, valid_from, unit_price, set_by)
+         SELECT p.id, DATE '2026-01-01', v.price, $1 FROM (VALUES ('TEST-PLL-6060', 12.50), ('TEST-PLL-3060', 11.00), ('TEST-WC-01', 80.00)) AS v(sku, price)
+           JOIN product p ON p.sku = v.sku ON CONFLICT DO NOTHING`, [d.rows[0]?.id]);
     }
     await c.query('COMMIT');
   } catch (e) {
