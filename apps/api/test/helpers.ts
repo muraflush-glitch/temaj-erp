@@ -7,6 +7,11 @@ import { totpAt } from '../src/auth/crypto';
 import { migrate } from '../src/database/migrate';
 import { seed } from '../src/database/seed';
 
+// Çelësa testues (jo sekrete reale). Në Production çelësat vijnë nga KMS.
+process.env.SECRET_KEYS = `k1:${Buffer.alloc(32, 1).toString('base64')},k2:${Buffer.alloc(32, 2).toString('base64')}`;
+process.env.SECRET_ACTIVE_KEY_ID = 'k1';
+process.env.LOGIN_IP_LIMIT = '1000';
+
 export const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/temaj_erp_test';
 export const ADMIN = { email: 'admin@temaj.test', password: 'Admin-Test-Fjalekalim-1' };
 export const APPROVER = { email: 'aprovues@temaj.test', password: 'Aprovues-Test-Fjalekalim-1' };
@@ -15,7 +20,7 @@ export const APPROVER = { email: 'aprovues@temaj.test', password: 'Aprovues-Test
 export async function freshDatabase(): Promise<Pool> {
   const pool = new Pool({ connectionString: TEST_DB_URL });
   await pool.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
-  await pool.query('DROP TYPE IF EXISTS approval_status CASCADE');
+  
   await migrate(pool);
   await seed(pool, { adminPassword: ADMIN.password, approverPassword: APPROVER.password });
   return pool;

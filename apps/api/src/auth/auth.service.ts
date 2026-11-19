@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
+import { decryptSecret, encryptSecret } from '../common/secrets';
 import { DomainError } from '../common/errors';
 import { AuthUser } from '../common/request';
 import { DB } from '../database/database.module';
@@ -23,7 +24,34 @@ export class AuthService {
     return Number(process.env.SESSION_TTL_MINUTES ?? 480);
   }
 
-  async login(email: string, password: string, totp?: string): Promise<{ token: string; mfaRequired: boolean }> {
+  /**
+   * Kufizim sipas IP-së: pas N tentativave të dështuara brenda dritares, IP-ja bllokohet përkohësisht,
+   * pavarësisht nga llogaria. Mbron nga provat masive mbi shumë llogari.
+   */
+  async login(email: string, password: string, totp: string | undefined, ip: string): Promise<{ token: string; mfaRequired: boolean }> {
+    const limit = Number(process.env.LOGIN_IP_LIMIT ?? 20);
+    const windowMin = Number(process.env.LOGIN_IP_WINDOW_MINUTES ?? 15);
+    const recent = await one<{ n: string }>(this.db,
+      `SELECT count(*) AS n FROM login_attempt WHERE ip = $1 AND NOT succeeded AND attempted_at > now() - make_interval(mins => $2)`,
+      [ip, windowMin]);
+    if (Number(recent?.n) >= limit) {
+      await this.audit.record(this.db, { actorUserId: null, action: 'auth.ip_rate_limited', entityType: 'login_attempt', details: { ip } });
+      throw new DomainError('RATE_LIMITED', 'Shumë tentativa nga kjo adresë. Provoni përsëri pas pak minutash.', 429);
+    }
+    try {
+      const result = await this.loginInner(email, password, totp);
+      await this.db.query('INSERT INTO login_attempt(ip, email, succeeded) VALUES ($1, $2, TRUE)', [ip, email]);
+      return result;
+    } catch (e) {
+      // MFA_REQUIRED nuk është tentativë e dështuar: fjalëkalimi ishte i saktë.
+      if (!(e instanceof DomainError && e.code === 'MFA_REQUIRED')) {
+        await this.db.query('INSERT INTO login_attempt(ip, email, succeeded) VALUES ($1, $2, FALSE)', [ip, email]);
+      }
+      throw e;
+    }
+  }
+
+  private async loginInner(email: string, password: string, totp?: string): Promise<{ token: string; mfaRequired: boolean }> {
     const user = await one<UserRow>(this.db, 'SELECT * FROM app_user WHERE email = $1', [email]);
     if (!user || !user.is_active) {
       await this.audit.record(this.db, { actorUserId: null, action: 'auth.login_failed', entityType: 'app_user', details: { email, reason: 'unknown_or_inactive' } });
@@ -49,7 +77,7 @@ export class AuthService {
       if (!totp) {
         throw new DomainError('MFA_REQUIRED', 'Shkruani kodin 2FA nga aplikacioni authenticator', 401);
       }
-      if (!user.mfa_secret || !verifyTotp(user.mfa_secret, totp)) {
+      if (!user.mfa_secret || !verifyTotp(decryptSecret(user.mfa_secret, `user:${userId}`), totp)) {
         await this.audit.record(this.db, { actorUserId: userId, action: 'auth.mfa_failed', entityType: 'app_user', entityId: userId });
         throw new DomainError('MFA_INVALID', 'Kodi 2FA është i pasaktë', 401);
       }
@@ -103,14 +131,14 @@ export class AuthService {
     if (!u) throw new DomainError('NOT_FOUND', 'Përdoruesi nuk u gjet', 404);
     if (u.mfa_enabled) throw new DomainError('MFA_ALREADY_ENABLED', '2FA është aktivizuar tashmë', 409);
     const secret = newTotpSecret();
-    await this.db.query('UPDATE app_user SET mfa_secret = $2 WHERE id = $1', [user.id, secret]);
+    await this.db.query('UPDATE app_user SET mfa_secret = $2 WHERE id = $1', [user.id, encryptSecret(secret, `user:${user.id}`)]);
     const label = encodeURIComponent(`Temaj ERP:${u.email}`);
     return { secret, otpauthUrl: `otpauth://totp/${label}?secret=${secret}&issuer=Temaj%20ERP&digits=6&period=30` };
   }
 
   async mfaEnable(user: AuthUser, code: string): Promise<void> {
     const u = await one<{ mfa_secret: string | null }>(this.db, 'SELECT mfa_secret FROM app_user WHERE id = $1', [user.id]);
-    if (!u?.mfa_secret || !verifyTotp(u.mfa_secret, code)) throw new DomainError('MFA_INVALID', 'Kodi 2FA është i pasaktë', 400);
+    if (!u?.mfa_secret || !verifyTotp(decryptSecret(u.mfa_secret, `user:${user.id}`), code)) throw new DomainError('MFA_INVALID', 'Kodi 2FA është i pasaktë', 400);
     await withTransaction(this.db, async (tx) => {
       await tx.query('UPDATE app_user SET mfa_enabled = TRUE WHERE id = $1', [user.id]);
       await tx.query('UPDATE user_session SET mfa_passed = TRUE WHERE id = $1', [user.sessionId]);

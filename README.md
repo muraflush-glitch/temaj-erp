@@ -23,6 +23,11 @@ Specifikimi i plotë (880 kërkesa, 172 vendime, 24 çështje të hapura) ësht�
 | Motori i aprovimeve: katër sy, pa vetë-aprovim (edhe në DB), idempotencë, bllokim kur mungon politika | `src/approvals` |
 | Dhënia e roleve vetëm përmes aprovimit; heqja e menjëhershme | `src/access` |
 | Audit trail vetëm-shtim me zinxhir hash-esh që zbulon ndërhyrjet | `audit_log` + `src/audit` |
+| Çelësat 2FA të enkriptuar (AES-256-GCM, rrotullim çelësash); DB refuzon tekst të lexueshëm | `src/common/secrets.ts`, migrimi 002 |
+| Kufizimi i hyrjes sipas IP-së | `src/auth/auth.service.ts` |
+| Transactional outbox me riprovim, backoff dhe dead-letter | `src/outbox` |
+| Eskalimi i aprovimeve të vonuara (DEC-G52-09) | `src/approvals/escalation.service.ts` |
+| Njoftimet: **SIMULIM vetëm në Development** (`dev_notification_sink`); ofruesi real pret OPEN-18/19 | `src/outbox/dev-notification.sink.ts` |
 
 ## Nisja lokale
 ```bash

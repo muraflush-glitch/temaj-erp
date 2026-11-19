@@ -4,6 +4,10 @@ import { AccessController } from './access/access.controller';
 import { AccessService } from './access/access.service';
 import { ApprovalsController } from './approvals/approvals.controller';
 import { ApprovalsService } from './approvals/approvals.service';
+import { EscalationService } from './approvals/escalation.service';
+import { DevNotificationSink } from './outbox/dev-notification.sink';
+import { OutboxService } from './outbox/outbox.service';
+import { WorkerService } from './outbox/worker.service';
 import { AuditController } from './audit/audit.controller';
 import { AuditService } from './audit/audit.service';
 import { AuthController } from './auth/auth.controller';
@@ -27,6 +31,7 @@ class HealthController {
   controllers: [HealthController, AuthController, OrgController, ApprovalsController, AccessController, AuditController],
   providers: [
     AuditService, PermissionService, AuthService, ApprovalsService, AccessService,
+    OutboxService, DevNotificationSink, EscalationService, WorkerService,
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],

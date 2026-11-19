@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { z } from 'zod';
 import { AuthUser, CurrentUser, Public } from '../common/request';
 import { AuthService } from './auth.service';
@@ -18,9 +19,10 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(200)
-  async login(@Body() body: unknown) {
+  async login(@Body() body: unknown, @Req() req: Request) {
     const dto = LoginDto.parse(body);
-    return this.auth.login(dto.email, dto.password, dto.totp);
+    // req.ip respekton 'trust proxy' (vendoset në main.ts sipas TRUST_PROXY për load balancer-in).
+    return this.auth.login(dto.email, dto.password, dto.totp, req.ip ?? '0.0.0.0');
   }
 
   @Post('logout')

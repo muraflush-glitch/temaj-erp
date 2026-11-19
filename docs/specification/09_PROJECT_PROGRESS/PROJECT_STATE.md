@@ -31,3 +31,8 @@ After each Claude development session, append a dated entry including source has
 - Teste: 30/30 kaluan kundrejt PostgreSQL 16.15. Detajet: `docs/progress/2026-11-19-faza1-pjesa1.md`.
 - Vendime të miratuara: asnjë i ri. Çështjet e hapura: të pandryshuara (24 OPEN_UNVERIFIED).
 - Production: nuk ekziston. Albtrix: i paprekur.
+
+## 2026-11-19 — Faza 1, pjesa 2 (Development)
+- Ndërtuar: enkriptimi i çelësave 2FA, kufizimi sipas IP-së, outbox me dead-letter, eskalimi i aprovimeve, punëtori periodik.
+- Teste: 41/41 kaluan. Detajet: `docs/progress/2026-11-19-faza1-pjesa2.md`.
+- Njoftimet janë simulim vetëm në Development. Çështjet e hapura: të pandryshuara.
