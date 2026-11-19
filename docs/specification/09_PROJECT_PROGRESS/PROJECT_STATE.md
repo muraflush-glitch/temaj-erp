@@ -51,3 +51,8 @@ After each Claude development session, append a dated entry including source has
 - Ndërtuar: klientët, çmimet neto, ofertat/porositë, rezervimi i stokut, dorëzimet, përjashtimet me aprovim.
 - Teste: 117/117 kaluan. Detajet: `docs/progress/2026-11-19-faza3-shitjet.md`.
 - Pa fatura, TVSH, fiskalizim apo kontabilizim. OPEN-06/09/23 të pandryshuara.
+
+## 2026-11-19 — Blerjet (prototip, Development)
+- Ndërtuar: furnitorët, porositë e blerjes me aprovim mbi prag, pranimet e mallit, përputhja tripalëshe e faturave.
+- Teste: 133/133 kaluan. Detajet: `docs/progress/2026-11-19-blerjet.md`.
+- Pa pagesa, kosto importi, valuta të huaja apo kontabilizim. OPEN-03/06/08 të pandryshuara.

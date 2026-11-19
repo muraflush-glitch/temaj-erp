@@ -35,6 +35,11 @@ export const PERMISSIONS: [string, string][] = [
   ['sales.order.confirm', 'Konfirmo ose anulo porosi'],
   ['sales.deliver', 'Dorëzo mallin e porosive'],
   ['approvals.sales.decide', 'Aprovo përjashtimet e shitjes (zbritje, çmim, nuanca)'],
+  ['suppliers.manage', 'Krijo dhe ndrysho furnitorë'],
+  ['purchase.read', 'Shiko porositë e blerjes'],
+  ['purchase.order.create', 'Krijo dhe dërgo porosi blerjeje'],
+  ['purchase.invoice.enter', 'Regjistro faturat e furnitorëve'],
+  ['approvals.purchase.decide', 'Aprovo porositë e blerjes mbi prag'],
 ];
 
 export const ROLES: { code: string; name: string; permissions: string[] }[] = [
@@ -43,9 +48,12 @@ export const ROLES: { code: string; name: string; permissions: string[] }[] = [
   { code: 'BRANCH_MANAGER', name: 'Menaxher dege', permissions: ['org.read', 'admin.roles.request'] },
   { code: 'ACCOUNTANT', name: 'Kontabilist', permissions: ['org.read', 'ledger.read', 'ledger.entry.create', 'ledger.entry.post', 'ledger.entry.reverse', 'ledger.period.request_close'] },
   { code: 'FINANCE_APPROVER', name: 'Aprovues financiar', permissions: ['org.read', 'ledger.read', 'approvals.ledger.decide'] },
+  { code: 'PURCHASER', name: 'Blerës', permissions: ['org.read', 'stock.read', 'purchase.read', 'suppliers.manage', 'purchase.order.create'] },
+  { code: 'PURCHASE_APPROVER', name: 'Aprovues blerjesh', permissions: ['org.read', 'purchase.read', 'approvals.purchase.decide'] },
+  { code: 'AP_CLERK', name: 'Financë — faturat e furnitorëve', permissions: ['org.read', 'purchase.read', 'purchase.invoice.enter'] },
   { code: 'SALESPERSON', name: 'Shitës', permissions: ['org.read', 'stock.read', 'customers.read', 'customers.manage', 'sales.read', 'sales.order.create', 'sales.order.confirm'] },
   { code: 'SALES_MANAGER', name: 'Menaxher shitjesh', permissions: ['org.read', 'stock.read', 'customers.read', 'customers.manage', 'customers.credit.manage', 'pricing.manage', 'sales.read', 'approvals.sales.decide'] },
-  { code: 'WAREHOUSE_KEEPER', name: 'Magazinier', permissions: ['org.read', 'stock.read', 'sales.read', 'sales.deliver', 'stock.receive', 'stock.dispatch', 'stock.transfer.dispatch', 'stock.transfer.receive', 'stock.adjust.request'] },
+  { code: 'WAREHOUSE_KEEPER', name: 'Magazinier', permissions: ['org.read', 'stock.read', 'sales.read', 'sales.deliver', 'purchase.read', 'stock.receive', 'stock.dispatch', 'stock.transfer.dispatch', 'stock.transfer.receive', 'stock.adjust.request'] },
   { code: 'WAREHOUSE_MANAGER', name: 'Menaxher magazine', permissions: ['org.read', 'stock.read', 'approvals.stock.decide'] },
   { code: 'CATALOG_MANAGER', name: 'Menaxher katalogu', permissions: ['org.read', 'stock.read', 'catalog.manage'] },
   { code: 'EMPLOYEE', name: 'Punonjës', permissions: ['org.read'] },
@@ -108,6 +116,11 @@ export async function seed(pool: Pool, opts: { adminPassword: string; approverPa
       `INSERT INTO approval_policy(action_code, branch_id, min_amount, required_approvals, approver_permission, escalate_after_hours)
        SELECT 'sales.order_exception', NULL, 0, 1, 'approvals.sales.decide', 8
         WHERE NOT EXISTS (SELECT 1 FROM approval_policy WHERE action_code = 'sales.order_exception' AND branch_id IS NULL)`);
+    // PRAG TESTUES: porositë e blerjes nga 1000 € e lart kërkojnë aprovim. Vlerën reale e vendos drejtoria (DEC-G50-01).
+    await c.query(
+      `INSERT INTO approval_policy(action_code, branch_id, min_amount, required_approvals, approver_permission, escalate_after_hours)
+       SELECT 'purchase.approve_po', NULL, 1000, 1, 'approvals.purchase.decide', 24
+        WHERE NOT EXISTS (SELECT 1 FROM approval_policy WHERE action_code = 'purchase.approve_po' AND branch_id IS NULL)`);
     // LIMITE TESTUESE zbritjeje — vlerat reale i vendos drejtoria (DEC-G48-01).
     await c.query(
       `INSERT INTO discount_limit(role_id, max_pct) SELECT id, 5 FROM role WHERE code = 'SALESPERSON' ON CONFLICT DO NOTHING`);

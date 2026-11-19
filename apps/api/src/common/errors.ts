@@ -34,6 +34,8 @@ const PG_MESSAGES: Record<string, [string, string, number]> = {
   STOCK_RESERVED: ['STOCK_RESERVED', 'Malli është i rezervuar për porosi të klientëve dhe nuk mund të dalë', 409],
   INSUFFICIENT_AVAILABLE_STOCK: ['INSUFFICIENT_AVAILABLE_STOCK', 'Nuk ka stok të lirë të mjaftueshëm për ta rezervuar këtë porosi', 409],
   SALES_ORDER_LOCKED: ['IMMUTABLE', 'Porosia e konfirmuar nuk mund të ndryshohet', 409],
+  PURCHASE_ORDER_LOCKED: ['IMMUTABLE', 'Porosia e blerjes nuk mund të ndryshohet pas dërgimit', 409],
+  PURCHASE_DOCUMENT_IMMUTABLE: ['IMMUTABLE', 'Pranimet dhe faturat e regjistruara nuk ndryshohen', 409],
   AUDIT_LOG_APPEND_ONLY: ['IMMUTABLE', 'Audit trail nuk mund të ndryshohet', 409],
 };
 
