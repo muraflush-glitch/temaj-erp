@@ -1,6 +1,7 @@
 'use client';
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
+// Kërkesat shkojnë te '/api' në të njëjtën adresë; serveri i web-it i përcjell te API-ja (next.config.mjs).
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api';
 const KEY = 'temaj_erp_token';
 
 export class ApiError extends Error {

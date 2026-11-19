@@ -23,3 +23,15 @@ th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line
 .login { max-width: 380px; margin: 60px auto; }
 code.secret { word-break: break-all; background: var(--bg); padding: 6px; display: block; border-radius: 6px; }
 select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 16px; background: #fff; }
+
+.invoice { background: #fff; max-width: 800px; margin: 20px auto; padding: 32px; border: 1px solid var(--line); position: relative; }
+.invoice h1 { font-size: 26px; }
+.invoice .cols { display: flex; justify-content: space-between; gap: 24px; margin: 16px 0; }
+.invoice .totals { margin-left: auto; width: 280px; }
+.invoice .totals td { border: 0; padding: 4px 6px; }
+.invoice .stamp { border: 2px solid var(--bad); color: var(--bad); padding: 6px 10px; display: inline-block; font-weight: 700; font-size: 13px; margin-bottom: 12px; }
+@media print {
+  header.top, .no-print { display: none !important; }
+  body { background: #fff; }
+  .invoice { border: 0; margin: 0; padding: 0; max-width: none; }
+}

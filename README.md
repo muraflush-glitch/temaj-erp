@@ -33,6 +33,8 @@ Specifikimi i plotë (880 kërkesa, 172 vendime, 24 çështje të hapura) ësht�
 | Blerjet (prototip): porosi me aprovim mbi prag, pranime malli, përputhje tripalëshe e faturave | migrimi 006, `src/purchasing` |
 | Faturimi dhe arkëtimet (**PROVIZOR**: TVSH 18 %, llogari testuese; jo fiskale) | migrimi 007, `src/billing` |
 | Formularë në ekran dhe test me Chrome | `apps/web`, `scripts/e2e-local.sh` |
+| Arka ditore (**PROVIZOR**): hapje, mbyllje me numërim, diferenca me aprovim | migrimi 008, `src/cash` |
+| Ngritja në server provë (Docker + HTTPS), ende e paprovuar | `deploy/README.md` |
 | Njoftimet: **SIMULIM vetëm në Development** (`dev_notification_sink`); ofruesi real pret OPEN-18/19 | `src/outbox/dev-notification.sink.ts` |
 
 ## Nisja lokale

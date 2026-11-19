@@ -18,6 +18,8 @@ import { AllExceptionsFilter } from './common/errors';
 import { Public } from './common/request';
 import { BillingController } from './billing/billing.controller';
 import { BillingService } from './billing/billing.service';
+import { CashController } from './cash/cash.controller';
+import { CashService } from './cash/cash.service';
 import { DatabaseModule } from './database/database.module';
 import { InventoryController } from './inventory/inventory.controller';
 import { InventoryService } from './inventory/inventory.service';
@@ -38,10 +40,10 @@ class HealthController {
 
 @Module({
   imports: [DatabaseModule],
-  controllers: [HealthController, AuthController, OrgController, ApprovalsController, AccessController, AuditController, LedgerController, InventoryController, SalesController, BillingController, PurchasingController],
+  controllers: [HealthController, AuthController, OrgController, ApprovalsController, AccessController, AuditController, LedgerController, InventoryController, SalesController, BillingController, CashController, PurchasingController],
   providers: [
     AuditService, PermissionService, AuthService, ApprovalsService, AccessService,
-    LedgerService, InventoryService, SalesService, BillingService, PurchasingService, OutboxService, DevNotificationSink, EscalationService, WorkerService,
+    LedgerService, InventoryService, SalesService, CashService, BillingService, PurchasingService, OutboxService, DevNotificationSink, EscalationService, WorkerService,
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],

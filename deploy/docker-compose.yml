@@ -1,0 +1,56 @@
+# Temaj ERP — mjedis PROVE (Staging) në një server të vetëm. JO për përdorim real: të dhëna testuese, rregulla provizore.
+# Nisja:  cd deploy && cp .env.example .env  (plotësoni vlerat)  &&  docker compose up -d --build
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: temaj
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?vendosni DB_PASSWORD}
+      POSTGRES_DB: temaj_erp
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temaj -d temaj_erp"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: { context: .., dockerfile: Dockerfile }
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      APP_ENV: staging
+      DATABASE_URL: postgres://temaj:${DB_PASSWORD}@db:5432/temaj_erp
+      API_PORT: "4000"
+      SECRET_KEYS: ${SECRET_KEYS:?vendosni SECRET_KEYS}
+      SECRET_ACTIVE_KEY_ID: ${SECRET_ACTIVE_KEY_ID:-k1}
+      WORKER_ENABLED: "true"
+      SESSION_TTL_MINUTES: "480"
+    # Migrimet aplikohen vetë në çdo nisje; janë të sigurta për t'u përsëritur.
+    command: sh -c "node apps/api/dist/database/migrate.cli.js && node apps/api/dist/main.js"
+
+  web:
+    build: { context: .., dockerfile: Dockerfile }
+    restart: unless-stopped
+    depends_on: [api]
+    working_dir: /app/apps/web
+    command: npx next start -p 3000
+
+  # HTTPS automatik. SITE_ADDRESS duhet të jetë një emër domeni që tregon te ky server (p.sh. erp-prove.temaj.eu).
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [web]
+    ports: ["80:80", "443:443"]
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?vendosni SITE_ADDRESS}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+
+volumes:
+  dbdata:
+  caddydata:

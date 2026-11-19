@@ -212,7 +212,7 @@ export class PurchasingService implements OnModuleInit {
     if (!o) throw notFound('Porosia e blerjes');
     await this.can(this.db, actor.id, 'purchase.read', Number(o.branch_id));
     const lines = await this.db.query(
-      `SELECT l.line_no, p.sku, p.name, l.qty::text, l.unit_cost::text, l.qty_received::text, l.qty_invoiced::text, round(l.qty * l.unit_cost, 4)::text AS total
+      `SELECT l.line_no, p.sku, p.name, p.tracks_lot, l.qty::text, l.unit_cost::text, l.qty_received::text, l.qty_invoiced::text, round(l.qty * l.unit_cost, 4)::text AS total
          FROM purchase_order_line l JOIN product p ON p.id = l.product_id WHERE l.po_id = $1 ORDER BY l.line_no`, [poId]);
     const invoices = await this.db.query(`SELECT id, invoice_no, to_char(invoice_date, 'YYYY-MM-DD') AS invoice_date, status, discrepancies FROM supplier_invoice WHERE po_id = $1 ORDER BY id`, [poId]);
     return { ...o, lines: lines.rows, invoices: invoices.rows, total: await this.total(this.db, poId) };
