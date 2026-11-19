@@ -51,3 +51,16 @@ export async function loginWithMfa(app: INestApplication, email: string, passwor
   const token = await login(app, email, password, totpAt(secret, Date.now()));
   return { token, secret };
 }
+
+/** Krijon një përdorues testues me rol të dhënë drejtpërdrejt në DB dhe kthen token-in e tij. */
+export async function userWithRole(app: INestApplication, pool: Pool, email: string, roleCode: string, branchCode: string | null, mfa = false): Promise<{ id: number; token: string }> {
+  const { hashPassword } = await import('../src/auth/crypto');
+  const pw = 'Punonjes-Test-Fjalekalim-1';
+  const u = await pool.query<{ id: string }>('INSERT INTO app_user(email, display_name, password_hash) VALUES ($1, $2, $3) RETURNING id', [email, email, await hashPassword(pw)]);
+  const id = Number(u.rows[0]?.id);
+  await pool.query(
+    `INSERT INTO user_role(user_id, role_id, branch_id)
+     SELECT $1, r.id, (SELECT id FROM branch WHERE code = $3) FROM role r WHERE r.code = $2`, [id, roleCode, branchCode]);
+  const token = mfa ? (await loginWithMfa(app, email, pw)).token : await login(app, email, pw);
+  return { id, token };
+}

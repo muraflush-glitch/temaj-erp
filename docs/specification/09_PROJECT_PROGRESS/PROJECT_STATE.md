@@ -36,3 +36,8 @@ After each Claude development session, append a dated entry including source has
 - Ndërtuar: enkriptimi i çelësave 2FA, kufizimi sipas IP-së, outbox me dead-letter, eskalimi i aprovimeve, punëtori periodik.
 - Teste: 41/41 kaluan. Detajet: `docs/progress/2026-11-19-faza1-pjesa2.md`.
 - Njoftimet janë simulim vetëm në Development. Çështjet e hapura: të pandryshuara.
+
+## 2026-11-19 — Faza 2 (prototip): libri kryesor (Development, dega faza-2-libri-kryesor)
+- Ndërtuar: libri me partia të dyfishta, pandryshueshmëria, storno, periudhat, mbyllja me aprovim, bilanci vërtetues.
+- Teste: 69/69 kaluan. Detajet: `docs/progress/2026-11-19-faza2-libri-kryesor.md`.
+- Llogaritë janë testuese. OPEN-03/04/05/06/10 të pandryshuara.

@@ -14,6 +14,7 @@ export function Nav({ me }: { me: Me | null }) {
     <header className="top">
       <strong>Temaj ERP</strong>
       <Link href="/">Paneli</Link>
+      <Link href="/libri">Libri kryesor</Link>
       <Link href="/aprovimet">Aprovimet</Link>
       <Link href="/siguria">Siguria</Link>
       <span className="grow" />

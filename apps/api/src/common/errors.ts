@@ -16,6 +16,13 @@ const PG_MESSAGES: Record<string, [string, string, number]> = {
   SELF_APPROVAL_FORBIDDEN: ['SELF_APPROVAL_FORBIDDEN', 'Nuk mund ta aprovoni kërkesën tuaj', 403],
   APPROVAL_NOT_PENDING: ['APPROVAL_NOT_PENDING', 'Kërkesa nuk është më në pritje', 409],
   APPROVAL_DECISION_IMMUTABLE: ['IMMUTABLE', 'Vendimi nuk mund të ndryshohet', 409],
+  JOURNAL_ENTRY_IMMUTABLE: ['IMMUTABLE', 'Regjistrimi i postuar nuk mund të ndryshohet; përdorni kthimin', 409],
+  UNBALANCED_ENTRY: ['UNBALANCED_ENTRY', 'Regjistrimi nuk është i balancuar: debia duhet të jetë e barabartë me kredinë', 422],
+  NO_FISCAL_PERIOD: ['NO_FISCAL_PERIOD', 'Nuk ka periudhë fiskale për këtë datë', 422],
+  PERIOD_CLOSED: ['PERIOD_CLOSED', 'Periudha është e mbyllur', 409],
+  PERIOD_HAS_DRAFTS: ['PERIOD_HAS_DRAFTS', 'Periudha ka regjistrime të papostuara; postojini ose fshijini para mbylljes', 409],
+  INVALID_ACCOUNT: ['INVALID_ACCOUNT', 'Një llogari është joaktive ose nuk lejon regjistrime', 422],
+  INVALID_BRANCH: ['INVALID_BRANCH', 'Dega nuk i përket këtij subjekti ligjor', 422],
   AUDIT_LOG_APPEND_ONLY: ['IMMUTABLE', 'Audit trail nuk mund të ndryshohet', 409],
 };
 

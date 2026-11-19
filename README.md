@@ -2,7 +2,7 @@
 
 Sistemi i integruar ERP/kontabilitet për **Temaj Qeramike** (Prizren dhe Prishtinë), që do ta zëvendësojë plotësisht Albtrix.
 
-> **Statusi: Faza 1 (themeli) në zhvillim — vetëm Development.** Nuk ka asnjë të dhënë reale dhe asnjë mjedis Production.
+> **Statusi: Faza 1 (themeli) dhe prototipi i librit kryesor — vetëm Development.** Nuk ka asnjë të dhënë reale dhe asnjë mjedis Production.
 > Kalimi në përdorim bëhet vetëm kur të jenë gati të gjitha modulet, njëkohësisht në të dyja degët.
 
 Specifikimi i plotë (880 kërkesa, 172 vendime, 24 çështje të hapura) është te `docs/specification/`.
@@ -27,6 +27,7 @@ Specifikimi i plotë (880 kërkesa, 172 vendime, 24 çështje të hapura) ësht�
 | Kufizimi i hyrjes sipas IP-së | `src/auth/auth.service.ts` |
 | Transactional outbox me riprovim, backoff dhe dead-letter | `src/outbox` |
 | Eskalimi i aprovimeve të vonuara (DEC-G52-09) | `src/approvals/escalation.service.ts` |
+| Libri kryesor (prototip, llogari testuese): partia të dyfishta, pandryshueshmëri, storno, periudha, bilanc vërtetues | migrimi 003, `src/ledger` |
 | Njoftimet: **SIMULIM vetëm në Development** (`dev_notification_sink`); ofruesi real pret OPEN-18/19 | `src/outbox/dev-notification.sink.ts` |
 
 ## Nisja lokale
