@@ -21,6 +21,7 @@ export function Nav({ me }: { me: Me | null }) {
       <Link href="/stoku">Stoku</Link>
       <Link href="/produktet">Produktet</Link>
       <Link href="/libri">Libri kryesor</Link>
+      <Link href="/raportet">Raportet</Link>
       <Link href="/aprovimet">Aprovimet</Link>
       <Link href="/perdoruesit">Përdoruesit</Link>
       <Link href="/siguria">Siguria</Link>

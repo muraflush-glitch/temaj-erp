@@ -6,8 +6,10 @@ import { DomainError, forbidden, notFound } from '../common/errors';
 import { AuthUser } from '../common/request';
 import { DB } from '../database/database.module';
 import { Db, one, Tx, withTransaction } from '../database/db';
+import { LedgerService } from '../ledger/ledger.service';
 
 export const APPROVE_PO = 'purchase.approve_po';
+export const PAY_SUPPLIER = 'purchase.pay_supplier';
 const NUM = /^\d{1,15}(\.\d{1,4})?$/;
 const positive = (s: string): boolean => NUM.test(s) && !/^0+(\.0+)?$/.test(s);
 
@@ -22,6 +24,7 @@ export class PurchasingService implements OnModuleInit {
     private readonly perms: PermissionService,
     private readonly audit: AuditService,
     private readonly approvals: ApprovalsService,
+    private readonly ledger: LedgerService,
   ) {}
 
   onModuleInit(): void {
@@ -38,6 +41,66 @@ export class PurchasingService implements OnModuleInit {
         await tx.query(`UPDATE purchase_order SET status = 'DRAFT' WHERE id = $1 AND status = 'PENDING_APPROVAL'`, [Number(req.payload['poId'])]);
       },
     });
+    this.approvals.register(PAY_SUPPLIER, {
+      requestPermission: 'purchase.payment.request',
+      execute: async (tx, req) => { await this.paySupplier(tx, req.id, Number(req.requested_by), Number(req.branch_id), req.payload); },
+    });
+  }
+
+  private async roleAccounts(tx: Tx, entityId: number, roles: string[]): Promise<Record<string, number>> {
+    const r = await tx.query<{ role: string; account_id: string }>('SELECT role, account_id FROM account_role WHERE legal_entity_id = $1 AND role = ANY($2)', [entityId, roles]);
+    const out: Record<string, number> = {};
+    for (const row of r.rows) out[row.role] = Number(row.account_id);
+    for (const role of roles) if (!out[role]) throw new DomainError('ACCOUNT_ROLE_MISSING', `Mungon lidhja e llogarisë për rolin ${role}`, 422);
+    return out;
+  }
+
+  /** Pagesa e aprovuar: del nga banka, mbyll faturat më të vjetra të furnitorit. */
+  private async paySupplier(tx: Tx, approvalRequestId: string, userId: number, branchId: number, payload: Record<string, unknown>): Promise<void> {
+    const supplierId = Number(payload['supplierId']); const amount = String(payload['amount']);
+    await tx.query('SELECT 1 FROM supplier WHERE id = $1 FOR UPDATE', [supplierId]);
+    const b = await one<{ legal_entity_id: string; today: string }>(tx, `SELECT legal_entity_id, to_char(CURRENT_DATE, 'YYYY-MM-DD') AS today FROM branch WHERE id = $1`, [branchId]);
+    if (!b) throw notFound('Dega');
+    const open = await tx.query<{ invoice_id: string; take: string }>(
+      `WITH o AS (SELECT invoice_id, open_amount, sum(open_amount) OVER (ORDER BY invoice_date, invoice_id) AS running FROM supplier_open_invoice WHERE supplier_id = $1 AND open_amount > 0)
+       SELECT invoice_id, LEAST(open_amount, $2::numeric - (running - open_amount))::text AS take FROM o WHERE running - open_amount < $2::numeric ORDER BY running`, [supplierId, amount]);
+    const full = await one<{ ok: boolean }>(tx, 'SELECT COALESCE(sum(x), 0) = $2::numeric AS ok FROM unnest($1::numeric[]) AS t(x)', [open.rows.map((r) => r.take), amount]);
+    // Nuk paguhet më shumë se detyrimi i hapur (avanset ndaj furnitorëve nuk janë ndërtuar ende).
+    if (!full?.ok) throw new DomainError('PAYMENT_EXCEEDS_PAYABLE', 'Pagesa e kalon detyrimin e hapur ndaj furnitorit', 422);
+    const entityId = Number(b.legal_entity_id);
+    const acc = await this.roleAccounts(tx, entityId, ['PAYABLE', 'BANK']);
+    const entryId = await this.ledger.postSystemEntry(tx, userId, {
+      legalEntityId: entityId, entryDate: b.today, description: `Pagesë furnitorit #${supplierId}`, sourceType: 'SUPPLIER_PAYMENT', sourceRef: String(supplierId),
+      idempotencyKey: `supplier-payment:${approvalRequestId}`,
+      lines: [{ accountId: acc['PAYABLE'] as number, branchId, debit: amount, credit: '0' }, { accountId: acc['BANK'] as number, branchId, debit: '0', credit: amount }],
+    });
+    const pay = await one<{ id: string }>(tx,
+      `INSERT INTO supplier_payment(legal_entity_id, supplier_id, branch_id, amount, paid_on, reference, journal_entry_id, approval_request_id, requested_by)
+       VALUES ($1, $2, $3, $4::numeric, $5::date, $6, $7, $8, $9) RETURNING id`,
+      [entityId, supplierId, branchId, amount, b.today, payload['reference'] ?? null, entryId, approvalRequestId, userId]);
+    for (const r of open.rows) {
+      await tx.query('INSERT INTO supplier_payment_allocation(payment_id, invoice_id, amount) VALUES ($1, $2, $3::numeric)', [pay?.id, r.invoice_id, r.take]);
+    }
+    await this.audit.record(tx, { actorUserId: userId, action: 'purchase.supplier_paid', entityType: 'supplier_payment', entityId: pay?.id, branchId,
+      details: { supplierId, amount, approvalRequestId: Number(approvalRequestId) } });
+  }
+
+  async requestSupplierPayment(actor: AuthUser, supplierId: number, input: { branchId: number; amount: string; reference?: string; reason: string; idempotencyKey: string }) {
+    if (!/^\d{1,15}(\.\d{1,2})?$/.test(input.amount) || /^0+(\.0+)?$/.test(input.amount)) throw new DomainError('VALIDATION', 'Shuma duhet të jetë pozitive, me jo më shumë se 2 shifra pas presjes');
+    if (!(await this.perms.has(actor.id, 'purchase.payment.request', input.branchId))) throw forbidden();
+    const ok = await one<{ ok: boolean }>(this.db, 'SELECT COALESCE(sum(open_amount), 0) >= $2::numeric AS ok FROM supplier_open_invoice WHERE supplier_id = $1', [supplierId, input.amount]);
+    if (!ok?.ok) throw new DomainError('PAYMENT_EXCEEDS_PAYABLE', 'Pagesa e kalon detyrimin e hapur ndaj furnitorit', 422);
+    return this.approvals.request(actor, { actionCode: PAY_SUPPLIER, branchId: input.branchId, amount: input.amount, reason: input.reason, idempotencyKey: input.idempotencyKey,
+      payload: { supplierId, amount: input.amount, reference: input.reference ?? null } });
+  }
+
+  async supplierBalance(actor: AuthUser, supplierId: number) {
+    if (!(await this.perms.has(actor.id, 'purchase.read', 'any'))) throw forbidden();
+    const inv = await this.db.query(
+      `SELECT invoice_id, po_id, invoice_no, to_char(invoice_date, 'YYYY-MM-DD') AS invoice_date, total::text, open_amount::text
+         FROM supplier_open_invoice WHERE supplier_id = $1 AND open_amount > 0 ORDER BY invoice_date, invoice_id`, [supplierId]);
+    const t = await one<{ t: string }>(this.db, 'SELECT COALESCE(sum(open_amount), 0)::text AS t FROM supplier_open_invoice WHERE supplier_id = $1', [supplierId]);
+    return { openTotal: t?.t ?? '0', openInvoices: inv.rows };
   }
 
   private async can(q: Db | Tx, userId: number, permission: string, branchId: number): Promise<void> {
@@ -178,9 +241,23 @@ export class PurchasingService implements OnModuleInit {
         if (c.price_diff) discrepancies.push({ lineNo: l.lineNo, type: 'PRICE_MISMATCH', invoiced: l.unitCost, ordered: c.po_cost });
       }
       const status = discrepancies.length === 0 ? 'MATCHED' : 'DISCREPANCY';
+      const tot = await one<{ t: string; today: string; legal_entity_id: string }>(tx,
+        `SELECT (SELECT COALESCE(sum(round(q * c, 2)), 0) FROM unnest($1::numeric[], $2::numeric[]) AS t(q, c))::text AS t, to_char(CURRENT_DATE, 'YYYY-MM-DD') AS today,
+                (SELECT legal_entity_id FROM branch WHERE id = $3) AS legal_entity_id`, [input.lines.map((l) => l.qty), input.lines.map((l) => l.unitCost), branchId]);
+      let entryId: number | null = null;
+      if (status === 'MATCHED') {
+        // PROVIZOR: blerja shkon në llogari kalimtare, jo në vlerën e stokut (OPEN-03). Pa TVSH blerjeje.
+        const entityId = Number(tot?.legal_entity_id);
+        const acc = await this.roleAccounts(tx, entityId, ['PAYABLE', 'PURCHASES_CLEARING']);
+        entryId = await this.ledger.postSystemEntry(tx, actor.id, {
+          legalEntityId: entityId, entryDate: tot?.today ?? '', description: `Faturë furnitori ${input.invoiceNo} (porosia #${poId})`, sourceType: 'SUPPLIER_INVOICE', sourceRef: String(poId),
+          idempotencyKey: `supplier-invoice:${o.supplier_id}:${input.invoiceNo}`,
+          lines: [{ accountId: acc['PURCHASES_CLEARING'] as number, branchId, debit: tot?.t ?? '0', credit: '0' }, { accountId: acc['PAYABLE'] as number, branchId, debit: '0', credit: tot?.t ?? '0' }],
+        });
+      }
       const inv = await one<{ id: string }>(tx,
-        `INSERT INTO supplier_invoice(po_id, supplier_id, invoice_no, invoice_date, status, discrepancies, entered_by) VALUES ($1, $2, $3, $4::date, $5, $6, $7) RETURNING id`,
-        [poId, o.supplier_id, input.invoiceNo, input.invoiceDate, status, JSON.stringify(discrepancies), actor.id]);
+        `INSERT INTO supplier_invoice(po_id, supplier_id, invoice_no, invoice_date, status, discrepancies, entered_by, total, journal_entry_id) VALUES ($1, $2, $3, $4::date, $5, $6, $7, $8::numeric, $9) RETURNING id`,
+        [poId, o.supplier_id, input.invoiceNo, input.invoiceDate, status, JSON.stringify(discrepancies), actor.id, tot?.t ?? '0', entryId]);
       const id = Number(inv?.id);
       for (const l of input.lines) {
         await tx.query('INSERT INTO supplier_invoice_line(invoice_id, po_line_no, qty, unit_cost) VALUES ($1, $2, $3::numeric, $4::numeric)', [id, l.lineNo, l.qty, l.unitCost]);

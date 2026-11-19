@@ -13,6 +13,7 @@ interface Supplier { id: string; code: string; name: string }
 interface Warehouse { id: string; branch_id: string; name: string }
 interface Product { sku: string; name: string; base_uom: string }
 interface DraftLine { sku: string; qty: string; unitCost: string }
+interface SupBalance { openTotal: string; openInvoices: { invoice_id: string; invoice_no: string; invoice_date: string; total: string; open_amount: string }[] }
 
 const STATUS: Record<string, string> = { DRAFT: 'Draft', PENDING_APPROVAL: 'Pret aprovim', APPROVED: 'Aprovuar', PARTIALLY_RECEIVED: 'Pranuar pjesërisht', RECEIVED: 'Pranuar', CANCELLED: 'Anuluar' };
 const DISC: Record<string, string> = { QTY_EXCEEDS_RECEIVED: 'sasia e faturuar kalon mallin e pranuar', PRICE_MISMATCH: 'çmimi ndryshon nga porosia', LINE_NOT_ON_ORDER: 'rreshti nuk është në porosi' };
@@ -35,6 +36,11 @@ export default function PurchasingPage() {
   const [invNo, setInvNo] = useState(''); const [invDate, setInvDate] = useState(today());
   const [invLines, setInvLines] = useState<Record<number, { qty: string; unitCost: string }>>({});
 
+  const [balSupplier, setBalSupplier] = useState('');
+  const [bal, setBal] = useState<SupBalance | null>(null);
+  const [payForm, setPayForm] = useState({ amount: '', reference: '', reason: '' });
+  const loadBalance = useCallback((id: string) => { setBalSupplier(id); if (id) api<SupBalance>(`/purchasing/suppliers/${id}/balance`).then(setBal).catch(() => setBal(null)); else setBal(null); }, []);
+
   const load = useCallback(() => {
     api<Po[]>('/purchasing/orders').then(setOrders).catch(() => undefined);
     api<Supplier[]>('/purchasing/suppliers').then((s) => { setSuppliers(s); setSupplierId((x) => x || (s[0]?.id ?? '')); }).catch(() => undefined);
@@ -55,7 +61,7 @@ export default function PurchasingPage() {
 
   async function run(fn: () => Promise<string>) {
     setMsg(null);
-    try { setMsg({ ok: true, text: await fn() }); load(); if (detail) await open(detail.id); }
+    try { setMsg({ ok: true, text: await fn() }); load(); if (detail) await open(detail.id); if (balSupplier) loadBalance(balSupplier); }
     catch (e) { setMsg({ ok: false, text: e instanceof Error ? e.message : 'Gabim' }); }
   }
 
@@ -85,6 +91,12 @@ export default function PurchasingPage() {
     return r.status === 'MATCHED' ? 'Fatura përputhet me porosinë dhe pranimin.' : `Fatura u bllokua: ${r.discrepancies.map((d) => `rreshti ${d.lineNo} — ${DISC[d.type] ?? d.type}`).join('; ')}.`;
   });
 
+  const requestPayment = (e: FormEvent) => { e.preventDefault(); const wh = warehouses.find((w) => w.id === warehouseId); if (!wh) return; void run(async () => {
+    await api(`/purchasing/suppliers/${balSupplier}/payment-requests`, { method: 'POST', body: { branchId: Number(wh.branch_id), amount: parseNum(payForm.amount), reference: payForm.reference.trim() || undefined, reason: payForm.reason.trim(), idempotencyKey: newKey() } });
+    setPayForm({ amount: '', reference: '', reason: '' });
+    return 'Pagesa u dërgua për aprovim. Banka ulet vetëm pasi ta aprovojë financa.';
+  }); };
+
   const canReceive = detail && ['APPROVED', 'PARTIALLY_RECEIVED'].includes(detail.status);
   const needsLot = detail?.lines.some((l) => l.tracks_lot && decSub(l.qty, l.qty_received) !== '0');
   const canInvoice = detail && ['APPROVED', 'PARTIALLY_RECEIVED', 'RECEIVED'].includes(detail.status);
@@ -93,7 +105,7 @@ export default function PurchasingPage() {
     <Nav me={me} />
     <main>
       <h1>Blerjet</h1>
-      <div className="card"><strong>Prototip.</strong> <span className="muted">Pa pagesa ndaj furnitorëve, kosto importi, valuta të huaja apo kontabilizim.</span></div>
+      <div className="card"><strong>Prototip.</strong> <span className="muted">Pa kosto importi dhe valuta të huaja. Blerja regjistrohet në llogari kalimtare, jo si vlerë stoku.</span></div>
       {msg && <div className="card" role="status"><span className={msg.ok ? 'ok' : 'error'}>{msg.text}</span></div>}
 
       <div className="card">
@@ -184,6 +196,28 @@ export default function PurchasingPage() {
           </>)}
         </div>
       )}
+
+      <div className="card">
+        <h2>Borxhi ndaj furnitorit dhe pagesa</h2>
+        <label htmlFor="balsup">Furnitori</label>
+        <select id="balsup" value={balSupplier} onChange={(e) => loadBalance(e.target.value)}><option value="">— zgjidhni —</option>{suppliers.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}</select>
+        {bal && (<>
+          <p>Detyrimi i hapur: <strong>{money(bal.openTotal)}</strong></p>
+          {bal.openInvoices.length > 0 && (
+            <table><thead><tr><th>Fatura</th><th>Data</th><th style={{ textAlign: 'right' }}>Vlera</th><th style={{ textAlign: 'right' }}>E papaguar</th></tr></thead><tbody>
+              {bal.openInvoices.map((i) => <tr key={i.invoice_id}><td>{i.invoice_no}</td><td>{i.invoice_date}</td><td style={{ textAlign: 'right' }}>{money(i.total)}</td><td style={{ textAlign: 'right' }}>{money(i.open_amount)}</td></tr>)}
+            </tbody></table>
+          )}
+          {bal.openInvoices.length > 0 && (
+            <form onSubmit={requestPayment}><div className="row" style={{ alignItems: 'flex-end' }}>
+              <div style={{ flex: 1, minWidth: 120 }}><label htmlFor="payamt">Shuma (€)</label><input id="payamt" inputMode="decimal" value={payForm.amount} onChange={(e) => setPayForm({ ...payForm, amount: e.target.value })} required /></div>
+              <div style={{ flex: 1, minWidth: 140 }}><label htmlFor="payref">Referenca bankare</label><input id="payref" value={payForm.reference} onChange={(e) => setPayForm({ ...payForm, reference: e.target.value })} /></div>
+              <div style={{ flex: 2, minWidth: 200 }}><label htmlFor="payreason">Arsyetimi</label><input id="payreason" value={payForm.reason} onChange={(e) => setPayForm({ ...payForm, reason: e.target.value })} required minLength={5} /></div>
+              <button>Kërko pagesën</button>
+            </div></form>
+          )}
+        </>)}
+      </div>
 
       <div className="card">
         <h2>Porositë e blerjes</h2>

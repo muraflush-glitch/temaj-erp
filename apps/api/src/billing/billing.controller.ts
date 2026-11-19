@@ -6,6 +6,8 @@ import { BillingService } from './billing.service';
 const Key = z.string().min(8).max(100);
 const Method = z.enum(['CASH', 'BANK']);
 const InvoiceDto = z.object({ idempotencyKey: Key, payment: z.object({ method: Method, reference: z.string().max(100).optional() }).optional() });
+const CreditDto = z.object({ idempotencyKey: Key, restock: z.boolean(), reason: z.string().min(5).max(500),
+  lines: z.array(z.object({ lineNo: z.number().int().positive(), qty: z.string().regex(/^\d{1,15}(\.\d{1,4})?$/) })).min(1).max(200) });
 const PaymentDto = z.object({ branchId: z.number().int().positive(), method: Method, amount: z.string().regex(/^\d{1,15}(\.\d{1,2})?$/), reference: z.string().max(100).optional(), idempotencyKey: Key });
 
 @Controller('sales')
@@ -17,6 +19,9 @@ export class BillingController {
 
   @Get('invoices/:id')
   getInvoice(@CurrentUser() u: AuthUser, @Param('id', ParseIntPipe) id: number) { return this.billing.getInvoice(u, id); }
+
+  @Post('invoices/:id/credit-note-requests')
+  credit(@CurrentUser() u: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() b: unknown) { return this.billing.requestCreditNote(u, id, CreditDto.parse(b)); }
 
   @Post('orders/:id/invoices')
   invoice(@CurrentUser() u: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() b: unknown) { return this.billing.invoiceOrder(u, id, InvoiceDto.parse(b)); }

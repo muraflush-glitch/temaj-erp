@@ -39,6 +39,10 @@ export const PERMISSIONS: [string, string][] = [
   ['payments.receive', 'Regjistro arkëtime nga klientët'],
   ['cash.session.manage', 'Hap dhe mbyll arkën'],
   ['approvals.cash.decide', 'Aprovo mungesat dhe tepricat e arkës'],
+  ['sales.credit_note.request', 'Kërko notë krediti / kthim malli (kalon në aprovim)'],
+  ['purchase.payment.request', 'Kërko pagesë ndaj furnitorit (kalon në aprovim)'],
+  ['approvals.payment.decide', 'Aprovo pagesat ndaj furnitorëve'],
+  ['reports.read', 'Shiko raportet'],
   ['suppliers.manage', 'Krijo dhe ndrysho furnitorë'],
   ['purchase.read', 'Shiko porositë e blerjes'],
   ['purchase.order.create', 'Krijo dhe dërgo porosi blerjeje'],
@@ -50,14 +54,14 @@ export const ROLES: { code: string; name: string; permissions: string[] }[] = [
   { code: 'SYSTEM_ADMIN', name: 'Administrator i sistemit', permissions: ['org.read', 'admin.users.manage', 'admin.roles.request', 'admin.roles.revoke', 'audit.read'] },
   { code: 'SECURITY_APPROVER', name: 'Aprovues i qasjes', permissions: ['org.read', 'approvals.access.decide', 'audit.read', 'admin.roles.revoke'] },
   { code: 'BRANCH_MANAGER', name: 'Menaxher dege', permissions: ['org.read', 'admin.roles.request'] },
-  { code: 'ACCOUNTANT', name: 'Kontabilist', permissions: ['org.read', 'ledger.read', 'ledger.entry.create', 'ledger.entry.post', 'ledger.entry.reverse', 'ledger.period.request_close'] },
-  { code: 'FINANCE_APPROVER', name: 'Aprovues financiar', permissions: ['org.read', 'ledger.read', 'approvals.ledger.decide', 'approvals.cash.decide'] },
+  { code: 'ACCOUNTANT', name: 'Kontabilist', permissions: ['org.read', 'ledger.read', 'ledger.entry.create', 'ledger.entry.post', 'ledger.entry.reverse', 'ledger.period.request_close', 'reports.read'] },
+  { code: 'FINANCE_APPROVER', name: 'Aprovues financiar', permissions: ['org.read', 'ledger.read', 'approvals.ledger.decide', 'approvals.cash.decide', 'approvals.payment.decide', 'reports.read'] },
   { code: 'PURCHASER', name: 'Blerës', permissions: ['org.read', 'stock.read', 'purchase.read', 'suppliers.manage', 'purchase.order.create'] },
   { code: 'PURCHASE_APPROVER', name: 'Aprovues blerjesh', permissions: ['org.read', 'purchase.read', 'approvals.purchase.decide'] },
-  { code: 'AP_CLERK', name: 'Financë — faturat e furnitorëve', permissions: ['org.read', 'purchase.read', 'purchase.invoice.enter'] },
-  { code: 'CASHIER', name: 'Arkëtar', permissions: ['org.read', 'customers.read', 'sales.read', 'sales.invoice.create', 'payments.receive', 'cash.session.manage'] },
+  { code: 'AP_CLERK', name: 'Financë — faturat e furnitorëve', permissions: ['org.read', 'purchase.read', 'purchase.invoice.enter', 'purchase.payment.request'] },
+  { code: 'CASHIER', name: 'Arkëtar', permissions: ['org.read', 'customers.read', 'sales.read', 'sales.invoice.create', 'payments.receive', 'cash.session.manage', 'sales.credit_note.request'] },
   { code: 'SALESPERSON', name: 'Shitës', permissions: ['org.read', 'stock.read', 'customers.read', 'customers.manage', 'sales.read', 'sales.order.create', 'sales.order.confirm'] },
-  { code: 'SALES_MANAGER', name: 'Menaxher shitjesh', permissions: ['org.read', 'stock.read', 'customers.read', 'customers.manage', 'customers.credit.manage', 'pricing.manage', 'sales.read', 'approvals.sales.decide'] },
+  { code: 'SALES_MANAGER', name: 'Menaxher shitjesh', permissions: ['org.read', 'stock.read', 'customers.read', 'customers.manage', 'customers.credit.manage', 'pricing.manage', 'sales.read', 'approvals.sales.decide', 'reports.read'] },
   { code: 'WAREHOUSE_KEEPER', name: 'Magazinier', permissions: ['org.read', 'stock.read', 'sales.read', 'sales.deliver', 'purchase.read', 'stock.receive', 'stock.dispatch', 'stock.transfer.dispatch', 'stock.transfer.receive', 'stock.adjust.request'] },
   { code: 'WAREHOUSE_MANAGER', name: 'Menaxher magazine', permissions: ['org.read', 'stock.read', 'approvals.stock.decide'] },
   { code: 'CATALOG_MANAGER', name: 'Menaxher katalogu', permissions: ['org.read', 'stock.read', 'catalog.manage'] },
@@ -70,6 +74,7 @@ export const TEST_ACCOUNTS: [string, string, string][] = [
   ['T-1100', 'Banka (test)', 'ASSET'],
   ['T-1200', 'Klientë — të arkëtueshme (test)', 'ASSET'],
   ['T-1300', 'Avanse ndaj punonjësve (test)', 'ASSET'],
+  ['T-1400', 'Blerje mallrash — llogari kalimtare (test)', 'ASSET'],
   ['T-2000', 'Detyrime ndaj furnitorëve (test)', 'LIABILITY'],
   ['T-2300', 'Avanse nga klientët (test)', 'LIABILITY'],
   ['T-2400', 'TVSH e llogaritur (test)', 'LIABILITY'],
@@ -135,6 +140,11 @@ export async function seed(pool: Pool, opts: { adminPassword: string; approverPa
     await c.query(
       `INSERT INTO cash_register(branch_id, code, name) SELECT b.id, 'ARKA-' || b.code, 'Arka ' || b.city FROM branch b
         WHERE NOT EXISTS (SELECT 1 FROM cash_register r WHERE r.branch_id = b.id)`);
+    for (const [action, perm] of [['sales.credit_note', 'approvals.sales.decide'], ['purchase.pay_supplier', 'approvals.payment.decide']]) {
+      await c.query(
+        `INSERT INTO approval_policy(action_code, branch_id, min_amount, required_approvals, approver_permission, escalate_after_hours)
+         SELECT $1, NULL, 0, 1, $2, 24 WHERE NOT EXISTS (SELECT 1 FROM approval_policy WHERE action_code = $1 AND branch_id IS NULL)`, [action, perm]);
+    }
     // PRAG TESTUES: porositë e blerjes nga 1000 € e lart kërkojnë aprovim. Vlerën reale e vendos drejtoria (DEC-G50-01).
     await c.query(
       `INSERT INTO approval_policy(action_code, branch_id, min_amount, required_approvals, approver_permission, escalate_after_hours)
@@ -171,7 +181,8 @@ export async function seed(pool: Pool, opts: { adminPassword: string; approverPa
       `INSERT INTO account_role(legal_entity_id, role, account_id)
        SELECT $1, m.role, a.id FROM (VALUES ('RECEIVABLE', 'T-1200'), ('SALES_REVENUE', 'T-4000'), ('VAT_OUTPUT', 'T-2400'),
                                             ('CASH', 'T-1000'), ('BANK', 'T-1100'), ('CUSTOMER_ADVANCES', 'T-2300'),
-                                            ('CASH_IN_TRANSIT', 'T-1050'), ('CASH_SHORTAGE', 'T-6100'), ('CASH_SURPLUS', 'T-4100')) AS m(role, code)
+                                            ('CASH_IN_TRANSIT', 'T-1050'), ('CASH_SHORTAGE', 'T-6100'), ('CASH_SURPLUS', 'T-4100'),
+                                            ('PAYABLE', 'T-2000'), ('PURCHASES_CLEARING', 'T-1400')) AS m(role, code)
          JOIN ledger_account a ON a.legal_entity_id = $1 AND a.code = m.code
        ON CONFLICT DO NOTHING`, [leId]);
 

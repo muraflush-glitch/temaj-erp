@@ -17,6 +17,7 @@ const ReceiveDto = z.object({ documentRef: z.string().min(1).max(100), idempoten
   lines: z.array(z.object({ lineNo: z.number().int().positive(), qty: Num, lot: Lot.optional() })).min(1).max(300) });
 const InvoiceDto = z.object({ invoiceNo: z.string().min(1).max(60), invoiceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   lines: z.array(z.object({ lineNo: z.number().int().positive(), qty: Num, unitCost: Num })).min(1).max(300) });
+const PayDto = z.object({ branchId: Id, amount: z.string().regex(/^\d{1,15}(\.\d{1,2})?$/), reference: z.string().max(100).optional(), reason: z.string().min(5).max(500), idempotencyKey: Key });
 const CancelDto = z.object({ reason: z.string().min(5).max(500) });
 
 @Controller('purchasing')
@@ -28,6 +29,12 @@ export class PurchasingController {
 
   @Post('suppliers')
   createSupplier(@CurrentUser() u: AuthUser, @Body() b: unknown) { return this.svc.createSupplier(u, SupplierDto.parse(b)); }
+
+  @Get('suppliers/:id/balance')
+  balance(@CurrentUser() u: AuthUser, @Param('id', ParseIntPipe) id: number) { return this.svc.supplierBalance(u, id); }
+
+  @Post('suppliers/:id/payment-requests')
+  pay(@CurrentUser() u: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() b: unknown) { return this.svc.requestSupplierPayment(u, id, PayDto.parse(b)); }
 
   @Get('orders')
   list(@CurrentUser() u: AuthUser) { return this.svc.listOrders(u); }

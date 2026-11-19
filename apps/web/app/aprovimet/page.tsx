@@ -4,7 +4,7 @@ import { api, ApprovalRequest } from '@/lib/api';
 import { useMe } from '@/lib/useMe';
 import { Nav } from '../Nav';
 
-const ACTION_LABELS: Record<string, string> = { 'access.grant_role': 'Dhënie roli', 'ledger.close_period': 'Mbyllje periudhe', 'stock.adjust': 'Korrigjim stoku', 'sales.order_exception': 'Përjashtim shitjeje', 'purchase.approve_po': 'Porosi blerjeje', 'cash.close_difference': 'Diferencë në arkë' };
+const ACTION_LABELS: Record<string, string> = { 'access.grant_role': 'Dhënie roli', 'ledger.close_period': 'Mbyllje periudhe', 'stock.adjust': 'Korrigjim stoku', 'sales.order_exception': 'Përjashtim shitjeje', 'purchase.approve_po': 'Porosi blerjeje', 'cash.close_difference': 'Diferencë në arkë', 'sales.credit_note': 'Notë krediti / kthim', 'purchase.pay_supplier': 'Pagesë furnitorit' };
 const STATUS: Record<string, string> = { PENDING: 'Në pritje', APPROVED: 'Aprovuar', REJECTED: 'Refuzuar', CANCELLED: 'Anuluar' };
 
 export default function ApprovalsPage() {

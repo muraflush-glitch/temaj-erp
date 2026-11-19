@@ -27,6 +27,7 @@ import { LedgerController } from './ledger/ledger.controller';
 import { LedgerService } from './ledger/ledger.service';
 import { PurchasingController } from './purchasing/purchasing.controller';
 import { PurchasingService } from './purchasing/purchasing.service';
+import { ReportsController } from './reports/reports.controller';
 import { SalesController } from './sales/sales.controller';
 import { SalesService } from './sales/sales.service';
 import { OrgController } from './org/org.controller';
@@ -40,7 +41,7 @@ class HealthController {
 
 @Module({
   imports: [DatabaseModule],
-  controllers: [HealthController, AuthController, OrgController, ApprovalsController, AccessController, AuditController, LedgerController, InventoryController, SalesController, BillingController, CashController, PurchasingController],
+  controllers: [HealthController, AuthController, OrgController, ApprovalsController, AccessController, AuditController, LedgerController, InventoryController, SalesController, BillingController, CashController, PurchasingController, ReportsController],
   providers: [
     AuditService, PermissionService, AuthService, ApprovalsService, AccessService,
     LedgerService, InventoryService, SalesService, CashService, BillingService, PurchasingService, OutboxService, DevNotificationSink, EscalationService, WorkerService,
