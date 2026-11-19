@@ -22,3 +22,4 @@ th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
 .login { max-width: 380px; margin: 60px auto; }
 code.secret { word-break: break-all; background: var(--bg); padding: 6px; display: block; border-radius: 6px; }
+select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 16px; background: #fff; }

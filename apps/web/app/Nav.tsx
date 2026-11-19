@@ -15,6 +15,7 @@ export function Nav({ me }: { me: Me | null }) {
       <strong>Temaj ERP</strong>
       <Link href="/">Paneli</Link>
       <Link href="/shitjet">Shitjet</Link>
+      <Link href="/klientet">Klientët</Link>
       <Link href="/blerjet">Blerjet</Link>
       <Link href="/stoku">Stoku</Link>
       <Link href="/libri">Libri kryesor</Link>

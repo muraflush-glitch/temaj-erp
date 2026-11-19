@@ -36,6 +36,8 @@ const PG_MESSAGES: Record<string, [string, string, number]> = {
   SALES_ORDER_LOCKED: ['IMMUTABLE', 'Porosia e konfirmuar nuk mund të ndryshohet', 409],
   PURCHASE_ORDER_LOCKED: ['IMMUTABLE', 'Porosia e blerjes nuk mund të ndryshohet pas dërgimit', 409],
   PURCHASE_DOCUMENT_IMMUTABLE: ['IMMUTABLE', 'Pranimet dhe faturat e regjistruara nuk ndryshohen', 409],
+  FINANCIAL_DOCUMENT_IMMUTABLE: ['IMMUTABLE', 'Faturat dhe arkëtimet e regjistruara nuk ndryshohen', 409],
+  OVER_ALLOCATION: ['OVER_ALLOCATION', 'Pagesa e shpërndarë e kalon vlerën e faturës ose të pagesës', 422],
   AUDIT_LOG_APPEND_ONLY: ['IMMUTABLE', 'Audit trail nuk mund të ndryshohet', 409],
 };
 

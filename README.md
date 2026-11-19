@@ -31,6 +31,8 @@ Specifikimi i plotë (880 kërkesa, 172 vendime, 24 çështje të hapura) ësht�
 | Stoku fizik (prototip, produkte testuese): paketimi m²/kuti/copë, lote, pa stok negativ, transfere me dy palë | migrimi 004, `src/inventory` |
 | Shitjet (prototip): oferta, porosi me rezervim stoku, dorëzime, përjashtime me aprovim; çmime neto, pa fatura | migrimi 005, `src/sales` |
 | Blerjet (prototip): porosi me aprovim mbi prag, pranime malli, përputhje tripalëshe e faturave | migrimi 006, `src/purchasing` |
+| Faturimi dhe arkëtimet (**PROVIZOR**: TVSH 18 %, llogari testuese; jo fiskale) | migrimi 007, `src/billing` |
+| Formularë në ekran dhe test me Chrome | `apps/web`, `scripts/e2e-local.sh` |
 | Njoftimet: **SIMULIM vetëm në Development** (`dev_notification_sink`); ofruesi real pret OPEN-18/19 | `src/outbox/dev-notification.sink.ts` |
 
 ## Nisja lokale
@@ -40,7 +42,7 @@ cp .env.example .env            # vendosni DATABASE_URL
 createdb temaj_erp_dev
 export DATABASE_URL=postgres://postgres:postgres@localhost:5432/temaj_erp_dev
 npm run db:migrate
-SEED_ADMIN_PASSWORD='...' SEED_APPROVER_PASSWORD='...' npm run db:seed   # vetëm të dhëna sintetike
+SEED_ADMIN_PASSWORD='...' SEED_APPROVER_PASSWORD='...' SEED_DEMO_PASSWORD='...' npm run db:seed   # vetëm të dhëna sintetike
 npm run build -w apps/api && node apps/api/dist/main.js                   # API në :4000
 npm run dev -w apps/web                                                   # Web në :3000
 ```
@@ -53,6 +55,6 @@ TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/temaj_erp_test npm
 Testet ekzekutohen kundrejt një PostgreSQL të vërtetë; skema rikrijohet nga e para në çdo ekzekutim.
 
 ## Rregulla që nuk ndryshojnë
-- Asnjë rregull tatimor, kontabël apo pagash i Kosovës nuk supozohet. Pjesët që varen prej tyre presin miratimin e kontabilistit.
+- Rregullat tatimore dhe kontabël në këtë fazë janë PROVIZORE (të vendosura me kërkesë të pronarit, për t'u korrigjuar). Janë të shënuara në databazë dhe Production refuzon të niset derisa kontabilisti t'i miratojë.
 - Asnjë e dhënë reale në Development. Seed-i refuzon të ekzekutohet kur `APP_ENV=production`.
 - Asnjë funksion nuk quhet “i përfunduar” pa teste të ekzekutuara realisht.

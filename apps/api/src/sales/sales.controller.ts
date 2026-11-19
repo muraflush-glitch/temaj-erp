@@ -16,7 +16,7 @@ const CustomerDto = z.object({
 });
 const PriceDto = z.object({ sku: Sku, validFrom: DateStr, unitPrice: Num });
 const OrderDto = z.object({
-  branchId: Id, warehouseId: Id, customerId: Id, note: z.string().max(500).optional(), idempotencyKey: Key,
+  branchId: Id, warehouseId: Id, customerId: Id, onCredit: z.boolean().optional(), note: z.string().max(500).optional(), idempotencyKey: Key,
   lines: z.array(z.object({
     sku: Sku, qty: Num, unitPrice: Num.optional(), discountPct: Pct.optional(),
     lot: z.object({ lotCode: z.string().min(1).max(60), shade: z.string().max(30).optional(), caliber: z.string().max(30).optional() }).optional(),

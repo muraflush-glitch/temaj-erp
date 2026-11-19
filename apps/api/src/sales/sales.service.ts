@@ -11,7 +11,7 @@ export const ORDER_EXCEPTION = 'sales.order_exception';
 const NUM = /^\d{1,15}(\.\d{1,4})?$/;
 
 export interface OrderLineInput { sku: string; lot?: { lotCode: string; shade?: string; caliber?: string }; qty: string; unitPrice?: string; discountPct?: string }
-export interface OrderInput { branchId: number; warehouseId: number; customerId: number; note?: string; idempotencyKey: string; lines: OrderLineInput[] }
+export interface OrderInput { branchId: number; warehouseId: number; customerId: number; onCredit?: boolean; note?: string; idempotencyKey: string; lines: OrderLineInput[] }
 
 /**
  * Shitjet (prototip): ofertë → porosi e konfirmuar me rezervim stoku → dorëzime (edhe të pjesshme).
@@ -91,8 +91,8 @@ export class SalesService implements OnModuleInit {
       const cust = await one(tx, 'SELECT 1 FROM customer WHERE id = $1 AND is_active', [input.customerId]);
       if (!cust) throw notFound('Klienti');
       const o = await one<{ id: string }>(tx,
-        `INSERT INTO sales_order(branch_id, warehouse_id, customer_id, note, created_by, idempotency_key) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-        [input.branchId, input.warehouseId, input.customerId, input.note ?? null, actor.id, input.idempotencyKey]);
+        `INSERT INTO sales_order(branch_id, warehouse_id, customer_id, note, created_by, idempotency_key, on_credit) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+        [input.branchId, input.warehouseId, input.customerId, input.note ?? null, actor.id, input.idempotencyKey, input.onCredit ?? false]);
       const id = Number(o?.id);
       let no = 0;
       for (const l of input.lines) {
@@ -124,8 +124,17 @@ export class SalesService implements OnModuleInit {
 
   /** Përjashtimet që kërkojnë aprovim: zbritje mbi limitin e rolit, çmim ndryshe nga lista, përzierje nuancash/kalibrash. */
   private async exceptions(tx: Tx, userId: number, orderId: number, branchId: number): Promise<string[]> {
-    const r = await one<{ over_discount: boolean; price_override: boolean; shade_mix: boolean }>(tx,
+    const r = await one<{ over_discount: boolean; price_override: boolean; shade_mix: boolean; over_credit: boolean }>(tx,
       `SELECT
+         -- Shitja me kredi: borxhi i hapur + porositë me kredi ende të pafaturuara + kjo porosi (bruto) kundrejt limitit.
+         (SELECT o.on_credit AND (
+              (SELECT COALESCE(sum(open_amount), 0) FROM customer_open_invoice WHERE customer_id = o.customer_id)
+            + (SELECT COALESCE(sum(round((l.qty - l.qty_invoiced) * l.unit_price * (100 - l.discount_pct) / 100, 2)), 0)
+                 FROM sales_order o2 JOIN sales_order_line l ON l.order_id = o2.id
+                WHERE o2.customer_id = o.customer_id AND o2.on_credit AND (o2.id = o.id OR o2.status IN ('CONFIRMED', 'PARTIALLY_DELIVERED', 'DELIVERED')))
+              * (1 + COALESCE((SELECT (value->>'pct')::numeric FROM policy_setting WHERE key = 'vat.standard_rate'), 0) / 100)
+            ) > c.credit_limit
+            FROM sales_order o JOIN customer c ON c.id = o.customer_id WHERE o.id = $1) AS over_credit,
          (SELECT COALESCE(max(l.discount_pct), 0) FROM sales_order_line l WHERE l.order_id = $1)
            > (SELECT COALESCE(max(d.max_pct), 0) FROM user_role ur JOIN discount_limit d ON d.role_id = ur.role_id
                WHERE ur.user_id = $2 AND ur.revoked_at IS NULL AND (ur.valid_until IS NULL OR ur.valid_until > now())
@@ -138,6 +147,7 @@ export class SalesService implements OnModuleInit {
     if (r?.over_discount) out.push('DISCOUNT_OVER_LIMIT');
     if (r?.price_override) out.push('PRICE_OVERRIDE');
     if (r?.shade_mix) out.push('SHADE_CALIBER_MIX');
+    if (r?.over_credit) out.push('CREDIT_LIMIT_EXCEEDED');
     return out;
   }
 
@@ -227,16 +237,16 @@ export class SalesService implements OnModuleInit {
 
   async getOrder(actor: AuthUser, orderId: number) {
     const o = await one<{ branch_id: string }>(this.db,
-      `SELECT o.id, o.branch_id, o.warehouse_id, o.status, to_char(o.order_date, 'YYYY-MM-DD') AS order_date, o.note, o.approval_request_id,
+      `SELECT o.id, o.branch_id, o.warehouse_id, o.status, o.on_credit, o.customer_id, to_char(o.order_date, 'YYYY-MM-DD') AS order_date, o.note, o.approval_request_id,
               c.code AS customer_code, c.name AS customer_name
          FROM sales_order o JOIN customer c ON c.id = o.customer_id WHERE o.id = $1`, [orderId]);
     if (!o) throw notFound('Porosia');
     await this.can(this.db, actor.id, 'sales.read', Number(o.branch_id));
     const lines = await this.db.query(
       `SELECT l.line_no, p.sku, p.name, s.lot_code, s.shade, s.caliber, l.qty::text, l.list_price::text, l.unit_price::text, l.discount_pct::text,
-              l.qty_delivered::text, sales_line_net(l)::text AS net
+              l.qty_delivered::text, l.qty_invoiced::text, sales_line_net(l)::text AS net
          FROM sales_order_line l JOIN product p ON p.id = l.product_id LEFT JOIN stock_lot s ON s.id = l.lot_id WHERE l.order_id = $1 ORDER BY l.line_no`, [orderId]);
-    return { ...o, lines: lines.rows, totalNet: await this.total(this.db, orderId), taxNote: 'Neto, pa TVSH. Trajtimi i TVSH-së pret miratim.' };
+    return { ...o, lines: lines.rows, totalNet: await this.total(this.db, orderId), taxNote: 'Vlerat janë neto. TVSH-ja shtohet në faturë, me normë provizore të pamiratuar nga kontabilisti.' };
   }
 
   async listOrders(actor: AuthUser) {

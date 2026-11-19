@@ -27,3 +27,7 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm audit --omit=dev --audit-level=high
+      - name: Testi i ndërfaqes me Chrome
+        run: scripts/e2e-local.sh
+        env:
+          E2E_DATABASE_URL: postgres://postgres:postgres@localhost:5432/temaj_erp_e2e
