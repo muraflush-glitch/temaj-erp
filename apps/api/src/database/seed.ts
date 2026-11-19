@@ -209,6 +209,12 @@ export async function seed(pool: Pool, opts: { adminPassword: string; approverPa
         `INSERT INTO user_role(user_id, role_id, branch_id)
          SELECT $1, id, NULL FROM role WHERE code IN ('SALESPERSON', 'WAREHOUSE_KEEPER', 'CASHIER', 'CATALOG_MANAGER', 'PURCHASER', 'ACCOUNTANT', 'AP_CLERK', 'SALES_MANAGER', 'SYSTEM_ADMIN')
          ON CONFLICT DO NOTHING`, [d.rows[0]?.id]);
+      // Që aprovimet të provohen nga ekrani, aprovuesi testues merr të gjitha rolet aprovuese (vetëm në demonstrim).
+      await c.query(
+        `INSERT INTO user_role(user_id, role_id, branch_id)
+         SELECT u.id, r.id, NULL FROM app_user u, role r
+          WHERE u.email = 'aprovues@temaj.test' AND r.code IN ('SALES_MANAGER', 'WAREHOUSE_MANAGER', 'PURCHASE_APPROVER', 'FINANCE_APPROVER')
+         ON CONFLICT DO NOTHING`);
       await c.query(
         `INSERT INTO product_price(product_id, valid_from, unit_price, set_by)
          SELECT p.id, DATE '2026-01-01', v.price, $1 FROM (VALUES ('TEST-PLL-6060', 12.50), ('TEST-PLL-3060', 11.00), ('TEST-WC-01', 80.00)) AS v(sku, price)

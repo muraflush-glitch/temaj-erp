@@ -8,6 +8,8 @@ const step = (m) => console.log(`✓ ${m}`);
 const browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH ?? '/usr/bin/google-chrome', headless: true, args: ['--no-sandbox', '--disable-gpu'] });
 const page = await browser.newPage();
 page.setDefaultTimeout(15000);
+await page.setViewport({ width: 1180, height: 820 });
+const shot = async (name) => { if (process.env.SCREENSHOT_DIR) await page.screenshot({ path: `${process.env.SCREENSHOT_DIR}/${name}.png`, fullPage: true }); };
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 const text = () => page.evaluate(() => document.body.innerText);
@@ -66,7 +68,7 @@ try {
   step('malli u dorëzua');
   await page.waitForSelector('#pm'); await clickButton('Lësho faturën dhe arkëto'); await waitText('Fatura nr. 1 u lëshua: 40,36 €');
   step('fatura u lëshua me arkëtim: 2,88 × 12,50 − 5 % = 34,20 + TVSH 18 % = 40,36 €');
-  if (process.env.SCREENSHOT_DIR) { await page.setViewport({ width: 1100, height: 900 }); await page.screenshot({ path: `${process.env.SCREENSHOT_DIR}/shitjet.png`, fullPage: true }); }
+  await shot('2-shitjet');
 
   await page.waitForFunction(() => [...document.querySelectorAll('#p0 option')].some((o) => o.textContent.includes('11,52')));
   step('lista e stokut në formularin e ofertës u përditësua pas shitjes');
@@ -83,12 +85,14 @@ try {
   await page.evaluate(() => [...document.querySelectorAll('a')].find((a) => a.innerText.includes('Shiko / printo')).click());
   await waitText('Faturë nr. 1/'); await waitText('DOKUMENT PROVIZOR'); await waitText('Për pagesë');
   if (!(await text()).includes('40,36 €')) throw new Error('Fatura e printueshme nuk tregon 40,36 €');
+  await shot('3-fatura');
   step('fatura e printueshme hapet, me vulën "dokument provizor"');
   await type('#ret1', '1,44'); await type('#retreason', 'Klienti ktheu një kuti të pahapur'); await clickButton('Kërko notë krediti');
   await waitText('Kërkesa për notë krediti u dërgua për aprovim');
   step('kthimi i mallit u kërkua nga fatura dhe pret aprovimin');
 
   await page.goto(`${BASE}/arka`, { waitUntil: 'networkidle0' }); await waitText('Duhet të jenë në arkë: 40,36 €');
+  await shot('4-arka');
   await type('input[inputmode="decimal"]', '40,36'); await clickButton('Mbyll arkën'); await waitText('Arka u mbyll pa diferencë');
   step('arka u mbyll pa diferencë: sistemi priste 40,36 € dhe aq u numëruan');
 
@@ -103,6 +107,7 @@ try {
   const supId = await page.evaluate(() => [...document.querySelectorAll('#balsup option')].find((o) => o.textContent.includes('FUR-E2E')).value);
   await page.select('#balsup', supId); await waitText('Detyrimi i hapur: 225,00 €');
   await type('#payamt', '100'); await type('#payreason', 'Pagesë e pjesshme nga ekrani'); await clickButton('Kërko pagesën'); await waitText('Pagesa u dërgua për aprovim');
+  await shot('5-blerjet');
   step('borxhi ndaj furnitorit (225 €) shfaqet; pagesa u kërkua dhe pret aprovimin e financës');
 
   await page.goto(`${BASE}/produktet`, { waitUntil: 'networkidle0' });
@@ -118,6 +123,7 @@ try {
   step('transferi u nis; dërguesi nuk e pranon dot vetë (duhet personi i degës tjetër)');
   await type('#adqty', '1,44'); await type('#adreason', 'Kuti e thyer gjatë zhvendosjes');
   await clickButton('Kërko korrigjimin'); await waitText('Korrigjimi u dërgua për aprovim');
+  await shot('1-stoku');
   step('korrigjimi i stokut u dërgua për aprovim, pa e ndryshuar stokun');
 
   await page.goto(`${BASE}/perdoruesit`, { waitUntil: 'networkidle0' });
@@ -129,6 +135,7 @@ try {
   await page.goto(`${BASE}/raportet`, { waitUntil: 'networkidle0' }); await waitText('Shitjet sipas degës'); await waitText('Dega Prishtinë');
   const rep = await text();
   if (!rep.includes('34,20 €') || !rep.includes('Furnitor nga shfletuesi') || !rep.includes('TEST-PLL-6060')) throw new Error('Raportet nuk i tregojnë shitjet, detyrimet ose lëvizjet');
+  await shot('6-raportet');
   step('raportet tregojnë shitjet e degës (34,20 € neto), detyrimin ndaj furnitorit dhe lëvizjet e stokut');
 
   for (const path of ['/aprovimet', '/siguria', '/klientet']) {

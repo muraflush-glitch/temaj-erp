@@ -53,3 +53,18 @@ jobs:
         if: failure()
         working-directory: deploy
         run: docker compose logs --tail 100
+
+  # Provon mjedisin e Codespaces: e ndërton, e përgatit dhe hyn në sistem me përdoruesin demo.
+  codespace:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: devcontainers/ci@v0.3
+        with:
+          push: never
+          runCmd: |
+            set -e
+            bash .devcontainer/start.sh
+            set -a; . ./.env.prove; set +a
+            node -e "fetch('http://localhost:3000/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'demo@temaj.test',password:process.env.SEED_DEMO_PASSWORD})}).then(async r=>{const b=await r.json();if(!b.token){console.error(b);process.exit(1)}console.log('Hyrja me përdoruesin demo funksionon')})"
+            grep -q 'demo@temaj.test' HYRJA.txt
