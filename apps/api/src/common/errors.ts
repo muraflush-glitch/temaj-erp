@@ -31,6 +31,9 @@ const PG_MESSAGES: Record<string, [string, string, number]> = {
   PRODUCT_INACTIVE: ['PRODUCT_INACTIVE', 'Produkti është joaktiv', 422],
   STOCK_MOVEMENT_IMMUTABLE: ['IMMUTABLE', 'Lëvizjet e stokut nuk ndryshohen; bëni një lëvizje korrigjuese', 409],
   PRODUCT_PACKAGING_LOCKED: ['PRODUCT_PACKAGING_LOCKED', 'Paketimi nuk ndryshohet pasi produkti ka lëvizje stoku', 409],
+  STOCK_RESERVED: ['STOCK_RESERVED', 'Malli është i rezervuar për porosi të klientëve dhe nuk mund të dalë', 409],
+  INSUFFICIENT_AVAILABLE_STOCK: ['INSUFFICIENT_AVAILABLE_STOCK', 'Nuk ka stok të lirë të mjaftueshëm për ta rezervuar këtë porosi', 409],
+  SALES_ORDER_LOCKED: ['IMMUTABLE', 'Porosia e konfirmuar nuk mund të ndryshohet', 409],
   AUDIT_LOG_APPEND_ONLY: ['IMMUTABLE', 'Audit trail nuk mund të ndryshohet', 409],
 };
 

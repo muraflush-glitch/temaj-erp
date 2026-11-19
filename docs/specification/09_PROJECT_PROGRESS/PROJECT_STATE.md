@@ -46,3 +46,8 @@ After each Claude development session, append a dated entry including source has
 - Ndërtuar: produktet me paketim, lotet, lëvizjet pa stok negativ, transferet me dy palë, korrigjimet me aprovim.
 - Teste: 96/96 kaluan. Detajet: `docs/progress/2026-11-19-faza4-stoku.md`.
 - Vetëm sasi; produktet janë testuese. OPEN-03/21/22 të pandryshuara.
+
+## 2026-11-19 — Faza 3 (prototip): shitjet (Development)
+- Ndërtuar: klientët, çmimet neto, ofertat/porositë, rezervimi i stokut, dorëzimet, përjashtimet me aprovim.
+- Teste: 117/117 kaluan. Detajet: `docs/progress/2026-11-19-faza3-shitjet.md`.
+- Pa fatura, TVSH, fiskalizim apo kontabilizim. OPEN-06/09/23 të pandryshuara.

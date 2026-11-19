@@ -21,6 +21,8 @@ import { InventoryController } from './inventory/inventory.controller';
 import { InventoryService } from './inventory/inventory.service';
 import { LedgerController } from './ledger/ledger.controller';
 import { LedgerService } from './ledger/ledger.service';
+import { SalesController } from './sales/sales.controller';
+import { SalesService } from './sales/sales.service';
 import { OrgController } from './org/org.controller';
 
 @Controller('health')
@@ -32,10 +34,10 @@ class HealthController {
 
 @Module({
   imports: [DatabaseModule],
-  controllers: [HealthController, AuthController, OrgController, ApprovalsController, AccessController, AuditController, LedgerController, InventoryController],
+  controllers: [HealthController, AuthController, OrgController, ApprovalsController, AccessController, AuditController, LedgerController, InventoryController, SalesController],
   providers: [
     AuditService, PermissionService, AuthService, ApprovalsService, AccessService,
-    LedgerService, InventoryService, OutboxService, DevNotificationSink, EscalationService, WorkerService,
+    LedgerService, InventoryService, SalesService, OutboxService, DevNotificationSink, EscalationService, WorkerService,
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],
