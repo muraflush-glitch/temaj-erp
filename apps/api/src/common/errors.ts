@@ -23,6 +23,14 @@ const PG_MESSAGES: Record<string, [string, string, number]> = {
   PERIOD_HAS_DRAFTS: ['PERIOD_HAS_DRAFTS', 'Periudha ka regjistrime të papostuara; postojini ose fshijini para mbylljes', 409],
   INVALID_ACCOUNT: ['INVALID_ACCOUNT', 'Një llogari është joaktive ose nuk lejon regjistrime', 422],
   INVALID_BRANCH: ['INVALID_BRANCH', 'Dega nuk i përket këtij subjekti ligjor', 422],
+  INSUFFICIENT_STOCK: ['INSUFFICIENT_STOCK', 'Nuk ka stok të mjaftueshëm; stoku fizik nuk mund të bëhet negativ', 409],
+  INVALID_QUANTITY_STEP: ['INVALID_QUANTITY_STEP', 'Sasia nuk përputhet me paketimin e produktit (kuti të plota)', 422],
+  LOT_REQUIRED: ['LOT_REQUIRED', 'Ky produkt kërkon lot (nuancë/kalibër)', 422],
+  LOT_NOT_ALLOWED: ['LOT_NOT_ALLOWED', 'Ky produkt nuk ndiqet me lot', 422],
+  LOT_PRODUCT_MISMATCH: ['LOT_PRODUCT_MISMATCH', 'Loti nuk i përket këtij produkti', 422],
+  PRODUCT_INACTIVE: ['PRODUCT_INACTIVE', 'Produkti është joaktiv', 422],
+  STOCK_MOVEMENT_IMMUTABLE: ['IMMUTABLE', 'Lëvizjet e stokut nuk ndryshohen; bëni një lëvizje korrigjuese', 409],
+  PRODUCT_PACKAGING_LOCKED: ['PRODUCT_PACKAGING_LOCKED', 'Paketimi nuk ndryshohet pasi produkti ka lëvizje stoku', 409],
   AUDIT_LOG_APPEND_ONLY: ['IMMUTABLE', 'Audit trail nuk mund të ndryshohet', 409],
 };
 

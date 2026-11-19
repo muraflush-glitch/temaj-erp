@@ -18,6 +18,14 @@ export const PERMISSIONS: [string, string][] = [
   ['ledger.entry.reverse', 'Kthe (storno) regjistrime të postuara'],
   ['ledger.period.request_close', 'Kërko mbylljen e periudhës (kalon në aprovim)'],
   ['approvals.ledger.decide', 'Aprovo ose refuzo mbylljen e periudhave'],
+  ['catalog.manage', 'Krijo dhe ndrysho produkte'],
+  ['stock.read', 'Shiko gjendjen e stokut'],
+  ['stock.receive', 'Regjistro hyrje malli'],
+  ['stock.dispatch', 'Regjistro dalje malli'],
+  ['stock.transfer.dispatch', 'Dërgo transfer te një magazinë tjetër'],
+  ['stock.transfer.receive', 'Konfirmo pranimin e një transferi'],
+  ['stock.adjust.request', 'Kërko korrigjim stoku (kalon në aprovim)'],
+  ['approvals.stock.decide', 'Aprovo ose refuzo korrigjimet e stokut'],
 ];
 
 export const ROLES: { code: string; name: string; permissions: string[] }[] = [
@@ -26,6 +34,9 @@ export const ROLES: { code: string; name: string; permissions: string[] }[] = [
   { code: 'BRANCH_MANAGER', name: 'Menaxher dege', permissions: ['org.read', 'admin.roles.request'] },
   { code: 'ACCOUNTANT', name: 'Kontabilist', permissions: ['org.read', 'ledger.read', 'ledger.entry.create', 'ledger.entry.post', 'ledger.entry.reverse', 'ledger.period.request_close'] },
   { code: 'FINANCE_APPROVER', name: 'Aprovues financiar', permissions: ['org.read', 'ledger.read', 'approvals.ledger.decide'] },
+  { code: 'WAREHOUSE_KEEPER', name: 'Magazinier', permissions: ['org.read', 'stock.read', 'stock.receive', 'stock.dispatch', 'stock.transfer.dispatch', 'stock.transfer.receive', 'stock.adjust.request'] },
+  { code: 'WAREHOUSE_MANAGER', name: 'Menaxher magazine', permissions: ['org.read', 'stock.read', 'approvals.stock.decide'] },
+  { code: 'CATALOG_MANAGER', name: 'Menaxher katalogu', permissions: ['org.read', 'stock.read', 'catalog.manage'] },
   { code: 'EMPLOYEE', name: 'Punonjës', permissions: ['org.read'] },
 ];
 
@@ -77,6 +88,18 @@ export async function seed(pool: Pool, opts: { adminPassword: string; approverPa
       `INSERT INTO approval_policy(action_code, branch_id, min_amount, required_approvals, approver_permission, escalate_after_hours)
        SELECT 'ledger.close_period', NULL, 0, 1, 'approvals.ledger.decide', 48
         WHERE NOT EXISTS (SELECT 1 FROM approval_policy WHERE action_code = 'ledger.close_period' AND branch_id IS NULL)`);
+
+    await c.query(
+      `INSERT INTO approval_policy(action_code, branch_id, min_amount, required_approvals, approver_permission, escalate_after_hours)
+       SELECT 'stock.adjust', NULL, 0, 1, 'approvals.stock.decide', 24
+        WHERE NOT EXISTS (SELECT 1 FROM approval_policy WHERE action_code = 'stock.adjust' AND branch_id IS NULL)`);
+    // PRODUKTE TESTUESE — jo katalogu i Temaj-it (OPEN-21).
+    await c.query(
+      `INSERT INTO product(sku, name, base_uom, pieces_per_box, m2_per_piece, allow_partial_box, tracks_lot) VALUES
+         ('TEST-PLL-6060', 'Pllakë 60x60 (test)', 'M2', 4, 0.36, FALSE, TRUE),
+         ('TEST-PLL-3060', 'Pllakë 30x60, kuti të hapura (test)', 'M2', 8, 0.18, TRUE, TRUE),
+         ('TEST-WC-01', 'WC shkollë (test)', 'PIECE', NULL, NULL, FALSE, FALSE)
+       ON CONFLICT (sku) DO NOTHING`);
 
     // LLOGARI TESTUESE — jo plani kontabël i Temaj-it. Plani real pret kontabilistin (OPEN-05).
     for (const [code, name, type] of TEST_ACCOUNTS) {

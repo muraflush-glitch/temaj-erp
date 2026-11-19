@@ -28,6 +28,7 @@ Specifikimi i plotë (880 kërkesa, 172 vendime, 24 çështje të hapura) ësht�
 | Transactional outbox me riprovim, backoff dhe dead-letter | `src/outbox` |
 | Eskalimi i aprovimeve të vonuara (DEC-G52-09) | `src/approvals/escalation.service.ts` |
 | Libri kryesor (prototip, llogari testuese): partia të dyfishta, pandryshueshmëri, storno, periudha, bilanc vërtetues | migrimi 003, `src/ledger` |
+| Stoku fizik (prototip, produkte testuese): paketimi m²/kuti/copë, lote, pa stok negativ, transfere me dy palë | migrimi 004, `src/inventory` |
 | Njoftimet: **SIMULIM vetëm në Development** (`dev_notification_sink`); ofruesi real pret OPEN-18/19 | `src/outbox/dev-notification.sink.ts` |
 
 ## Nisja lokale
