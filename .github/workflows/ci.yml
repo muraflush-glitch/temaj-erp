@@ -31,3 +31,25 @@ jobs:
         run: scripts/e2e-local.sh
         env:
           E2E_DATABASE_URL: postgres://postgres:postgres@localhost:5432/temaj_erp_e2e
+
+  # Provon skedarët e ngritjes në server: ndërton imazhin, nis databazën, API-n dhe web-in, dhe hyn në sistem përmes web-it.
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Ndërto dhe nis mjedisin provë
+        working-directory: deploy
+        run: |
+          printf 'SITE_ADDRESS=localhost\nDB_PASSWORD=ci-test-password-123\nSECRET_KEYS=k1:%s\nSECRET_ACTIVE_KEY_ID=k1\n' "$(openssl rand -base64 32)" > .env
+          docker compose up -d --build db api web
+          for i in $(seq 1 60); do
+            docker compose exec -T web node -e "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" && break
+            sleep 3
+          done
+          docker compose exec -T -e SEED_ADMIN_PASSWORD=Admin-CI-Fjalekalim-1 -e SEED_APPROVER_PASSWORD=Aprovues-CI-Fjalekalim-1 -e SEED_DEMO_PASSWORD=Demo-CI-Fjalekalim-1 api node apps/api/dist/database/seed.cli.js
+          docker compose exec -T web node -e "fetch('http://localhost:3000/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'demo@temaj.test',password:'Demo-CI-Fjalekalim-1'})}).then(async r=>{const b=await r.json();if(!b.token){console.error(b);process.exit(1)}console.log('Hyrja përmes web-it funksionon')})"
+          docker compose exec -T web node -e "fetch('http://localhost:3000/hyrja').then(async r=>{const t=await r.text();if(!r.ok||!t.includes('Temaj ERP'))process.exit(1);console.log('Faqja e hyrjes shërbehet')})"
+      - name: Log-et në rast dështimi
+        if: failure()
+        working-directory: deploy
+        run: docker compose logs --tail 100

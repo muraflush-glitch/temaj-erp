@@ -37,7 +37,7 @@ services:
     restart: unless-stopped
     depends_on: [api]
     working_dir: /app/apps/web
-    command: npx next start -p 3000
+    command: node /app/node_modules/next/dist/bin/next start -p 3000
 
   # HTTPS automatik. SITE_ADDRESS duhet të jetë një emër domeni që tregon te ky server (p.sh. erp-prove.temaj.eu).
   caddy:
