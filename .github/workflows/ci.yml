@@ -31,6 +31,8 @@ jobs:
         run: scripts/e2e-local.sh
         env:
           E2E_DATABASE_URL: postgres://postgres:postgres@localhost:5432/temaj_erp_e2e
+      - name: Prova që punon brenda shfletuesit (pa server)
+        run: npm run demo:build && node apps/demo/e2e.mjs
 
   # Provon skedarët e ngritjes në server: ndërton imazhin, nis databazën, API-n dhe web-in, dhe hyn në sistem përmes web-it.
   docker:
@@ -83,7 +85,6 @@ jobs:
       - run: scripts/package-vps.sh "$PWD/temaj-erp.zip"
       - name: Përgatit një server me një faqe ekzistuese pas Caddy
         run: |
-          sudo apt-get install -y -qq debian-keyring debian-archive-keyring apt-transport-https curl gnupg
           curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
           curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null
           sudo apt-get update -y -qq && sudo apt-get install -y -qq caddy

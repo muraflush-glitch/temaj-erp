@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useMe } from '@/lib/useMe';
@@ -192,7 +193,7 @@ export default function SalesPage() {
             {invoices.map((i) => (
               <tr key={i.id}><td>{i.invoice_no}/{i.fiscal_year}</td><td>{i.invoice_date}</td><td>{i.customer_name}</td>
                 <td style={{ textAlign: 'right' }}>{money(i.gross)}</td><td style={{ textAlign: 'right' }}>{money(i.open_amount)}</td>
-                <td><a href={`/fatura/${i.id}`}>Shiko / printo</a></td></tr>
+                <td><Link href={`/fatura/${i.id}`}>Shiko / printo</Link></td></tr>
             ))}
           </tbody></table>
         )}

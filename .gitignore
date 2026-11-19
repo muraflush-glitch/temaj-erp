@@ -9,3 +9,5 @@ coverage/
 .env.prove
 HYRJA.txt
 temaj-erp.zip
+apps/demo/dist/
+apps/demo/src/migrations.gen.ts

@@ -76,3 +76,8 @@ After each Claude development session, append a dated entry including source has
 - Ndërtuar: nota krediti me aprovim, detyrime dhe pagesa furnitorësh me aprovim, katër raporte.
 - Teste: 173/173 + 26 hapa në shfletues. Detajet: `docs/progress/2026-11-19-kthimet-furnitoret-raportet.md`.
 - Blerjet regjistrohen në llogari kalimtare (provizore); stoku mbetet pa vlerë (OPEN-03).
+
+## 2026-11-19 — Prova që punon brenda shfletuesit (Development)
+- Ndërtuar: `apps/demo`, i njëjti kod me PostgreSQL në WebAssembly; publikuar si artifact privat në Claude.
+- Teste: Jest + 26 hapa në shfletues + 17 hapa të provës pa server. Detajet: `docs/progress/2026-11-19-prova-ne-shfletues.md`.
+- Vetëm demonstrim me të dhëna testuese; nuk zëvendëson vendosjen në server.

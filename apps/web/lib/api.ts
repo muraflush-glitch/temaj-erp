@@ -17,6 +17,18 @@ export const tokenStore = {
 
 export async function api<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
   const token = tokenStore.get();
+  // Prova që punon brenda shfletuesit vendos një backend lokal; aplikacioni i vërtetë përdor rrjetin.
+  const local = (globalThis as { __temajLocalApi?: (m: string, p: string, b: unknown, t: string | null) => Promise<{ status: number; body: unknown }> }).__temajLocalApi;
+  if (local) {
+    const r = await local(init.method ?? 'GET', path, init.body, token);
+    if (r.status === 204) return undefined as T;
+    const d = (r.body ?? {}) as { code?: string; message?: string };
+    if (r.status >= 400) {
+      if (r.status === 401 && d.code === 'UNAUTHENTICATED') tokenStore.clear();
+      throw new ApiError(r.status, d.code ?? 'HTTP', d.message ?? 'Gabim i panjohur');
+    }
+    return r.body as T;
+  }
   const res = await fetch(`${BASE}${path}`, {
     method: init.method ?? 'GET',
     headers: {

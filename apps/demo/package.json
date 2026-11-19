@@ -1,0 +1,14 @@
+{
+  "name": "@temaj/demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Prova që punon brenda shfletuesit: i njëjti kod i API-së dhe i ndërfaqes, me PostgreSQL të kompiluar në WebAssembly (PGlite). Vetëm për demonstrim.",
+  "scripts": { "build": "node build.mjs" },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.17",
+    "@noble/ciphers": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
+    "buffer": "^6.0.3",
+    "esbuild": "^0.25.0"
+  }
+}
