@@ -36,11 +36,13 @@ try {
 
   await type('#pw', process.env.DEMO_PASSWORD); await clickButton('Hyr');
   await waitText('Lejet tuaja'); await waitText('Dega Prizren');
+  await shot('0-paneli');
   step('hyrja funksionon; paneli shfaq degët');
 
   await page.goto(`${BASE}/klientet`, { waitUntil: 'networkidle0' });
   await type('#code', 'kl-e2e'); await type('#name', 'Klient nga shfletuesi');
   await clickButton('Shto klientin'); await waitText('Klienti u shtua.'); await waitText('KL-E2E');
+  await shot('7-klientet');
   step('klienti u krijua nga formulari');
 
   await page.goto(`${BASE}/stoku`, { waitUntil: 'networkidle0' });
@@ -79,6 +81,7 @@ try {
   await page.goto(`${BASE}/libri`, { waitUntil: 'networkidle0' }); await waitText('Bilanci vërtetues'); await waitText('T-1000');
   const t = await text();
   if (!t.includes('40,36') || !t.includes('34,20') || !t.includes('6,16')) throw new Error('Libri kryesor nuk i tregon shumat e faturës');
+  await shot('a-libri');
   step('libri kryesor tregon arkën 40,36, të ardhurat 34,20 dhe TVSH-në 6,16');
 
   await page.goto(`${BASE}/shitjet`, { waitUntil: 'networkidle0' }); await waitText('Shiko / printo');
@@ -114,6 +117,7 @@ try {
   await type('#psku', 'e2e-lavaman'); await type('#pname', 'Lavaman nga shfletuesi'); await page.select('#puom', 'PIECE');
   await clickButton('Shto produktin'); await waitText('Produkti u shtua.'); await waitText('E2E-LAVAMAN'); await waitText('pa çmim');
   await page.select('#prsku', 'E2E-LAVAMAN'); await type('#prval', '55'); await clickButton('Vendos çmimin'); await waitText('Çmimi u vendos.'); await waitText('55,00 €');
+  await shot('8-produktet');
   step('produkt i ri dhe çmimi i tij u vendosën nga ekrani');
 
   await page.goto(`${BASE}/stoku`, { waitUntil: 'networkidle0' });
@@ -130,6 +134,7 @@ try {
   await type('#uemail', 'punonjes.e2e@temaj.test'); await type('#uname', 'Punonjës nga shfletuesi'); await type('#upw', 'Fjalekalim-E2E-12345');
   await clickButton('Krijo përdoruesin'); await waitText('Përdoruesi u krijua.'); await waitText('punonjes.e2e@temaj.test');
   await type('#greason', 'Rol për provë nga ekrani'); await clickButton('Kërko rolin'); await waitText('u dërgua për aprovim te një person tjetër');
+  await shot('9-perdoruesit');
   step('përdorues i ri u krijua; roli u kërkua dhe pret aprovimin e një personi tjetër');
 
   await page.goto(`${BASE}/raportet`, { waitUntil: 'networkidle0' }); await waitText('Shitjet sipas degës'); await waitText('Dega Prishtinë');

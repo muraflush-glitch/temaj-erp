@@ -31,6 +31,8 @@ jobs:
         run: scripts/e2e-local.sh
         env:
           E2E_DATABASE_URL: postgres://postgres:postgres@localhost:5432/temaj_erp_e2e
+      - name: Prova që punon brenda shfletuesit (pa server)
+        run: npm run demo:build && node apps/demo/e2e.mjs
 
   # Provon skedarët e ngritjes në server: ndërton imazhin, nis databazën, API-n dhe web-in, dhe hyn në sistem përmes web-it.
   docker:

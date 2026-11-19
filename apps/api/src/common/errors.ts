@@ -44,33 +44,24 @@ const PG_MESSAGES: Record<string, [string, string, number]> = {
   AUDIT_LOG_APPEND_ONLY: ['IMMUTABLE', 'Audit trail nuk mund të ndryshohet', 409],
 };
 
+/** Kthen statusin HTTP dhe trupin e përgjigjes për çdo gabim. E përdor filtri i NestJS dhe prova që punon në shfletues. */
+export function toHttpError(err: unknown): { status: number; body: Record<string, unknown>; unexpected?: boolean } {
+  if (err instanceof DomainError) return { status: err.status, body: { code: err.code, message: err.message } };
+  if (err instanceof ZodError) return { status: 400, body: { code: 'VALIDATION', message: 'Të dhëna të pavlefshme', issues: err.issues } };
+  if (err instanceof HttpException) return { status: err.getStatus(), body: { code: 'HTTP', message: err.message } };
+  const pgMsg = (err as { message?: string }).message ?? '';
+  const mapped = PG_MESSAGES[pgMsg];
+  if (mapped) return { status: mapped[2], body: { code: mapped[0], message: mapped[1] } };
+  if ((err as { code?: string }).code === '23505') return { status: 409, body: { code: 'CONFLICT', message: 'Regjistrimi ekziston tashmë' } };
+  return { status: 500, body: { code: 'INTERNAL', message: 'Gabim i brendshëm' }, unexpected: true };
+}
+
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   catch(err: unknown, host: ArgumentsHost): void {
     const res = host.switchToHttp().getResponse<Response>();
-    if (err instanceof DomainError) {
-      res.status(err.status).json({ code: err.code, message: err.message });
-      return;
-    }
-    if (err instanceof ZodError) {
-      res.status(400).json({ code: 'VALIDATION', message: 'Të dhëna të pavlefshme', issues: err.issues });
-      return;
-    }
-    if (err instanceof HttpException) {
-      res.status(err.getStatus()).json({ code: 'HTTP', message: err.message });
-      return;
-    }
-    const pgMsg = (err as { message?: string }).message ?? '';
-    const mapped = PG_MESSAGES[pgMsg];
-    if (mapped) {
-      res.status(mapped[2]).json({ code: mapped[0], message: mapped[1] });
-      return;
-    }
-    if ((err as { code?: string }).code === '23505') {
-      res.status(409).json({ code: 'CONFLICT', message: 'Regjistrimi ekziston tashmë' });
-      return;
-    }
-    console.error(err);
-    res.status(500).json({ code: 'INTERNAL', message: 'Gabim i brendshëm' });
+    const out = toHttpError(err);
+    if (out.unexpected) console.error(err);
+    res.status(out.status).json(out.body);
   }
 }
