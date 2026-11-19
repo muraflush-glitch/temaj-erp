@@ -7,7 +7,7 @@ set -a; . ./.env.prove; set +a
 export WORKER_ENABLED=true
 
 sudo service postgresql start >/dev/null
-for i in $(seq 1 30); do sudo -u postgres pg_isready -q && break; sleep 1; done
+for i in $(seq 1 30); do sudo runuser -u postgres -- pg_isready -q && break; sleep 1; done
 
 pkill -f "apps/api/dist/main.js" 2>/dev/null || true
 pkill -f "next-server" 2>/dev/null || true
