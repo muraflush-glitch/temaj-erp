@@ -14,6 +14,8 @@ export interface ApprovalAction {
   validate?: (tx: Tx, payload: Record<string, unknown>, branchId: number | null) => Promise<void>;
   /** Ekzekutohet në të njëjtin transaksion me aprovimin final. */
   execute: (tx: Tx, req: ApprovalRequestRow) => Promise<void>;
+  /** Ekzekutohet kur kërkesa refuzohet ose anulohet (p.sh. për ta kthyer dokumentin në draft). */
+  onClosedWithoutApproval?: (tx: Tx, req: ApprovalRequestRow) => Promise<void>;
 }
 
 export interface ApprovalRequestRow {
@@ -52,7 +54,15 @@ export class ApprovalsService {
     if (!action) throw new DomainError('UNKNOWN_ACTION', `Veprim i panjohur: ${input.actionCode}`);
     if (!/^\d{1,15}(\.\d{1,4})?$/.test(input.amount)) throw new DomainError('VALIDATION', 'Shuma duhet të jetë numër dhjetor pozitiv');
 
-    return withTransaction(this.db, async (tx) => {
+    return withTransaction(this.db, (tx) => this.requestInTx(tx, actor, input));
+  }
+
+  /** Si `request`, por brenda transaksionit të thirrësit: dokumenti dhe kërkesa e tij ruhen ose dështojnë bashkë. */
+  async requestInTx(tx: Tx, actor: AuthUser, input: NewApprovalRequest): Promise<{ id: number; status: string; created: boolean }> {
+    if (!this.actions.has(input.actionCode)) throw new DomainError('UNKNOWN_ACTION', `Veprim i panjohur: ${input.actionCode}`);
+    if (!/^\d{1,15}(\.\d{1,4})?$/.test(input.amount)) throw new DomainError('VALIDATION', 'Shuma duhet të jetë numër dhjetor pozitiv');
+    const action = this.actions.get(input.actionCode) as ApprovalAction;
+    {
       // Idempotencë: e njëjta kërkesë e dërguar dy herë nuk krijon dy aprovime.
       const existing = await one<{ id: string; status: string }>(tx,
         'SELECT id, status FROM approval_request WHERE requested_by = $1 AND idempotency_key = $2', [actor.id, input.idempotencyKey]);
@@ -80,7 +90,15 @@ export class ApprovalsService {
       await this.audit.record(tx, { actorUserId: actor.id, action: 'approval.requested', entityType: 'approval_request', entityId: id,
         branchId: input.branchId, details: { actionCode: input.actionCode, amount: input.amount, reason: input.reason } });
       return { id, status: 'PENDING', created: true };
-    });
+    }
+  }
+
+  /** A ka politikë aprovimi për këtë veprim dhe shumë? Përdoret kur aprovimi kërkohet vetëm mbi një prag. */
+  async policyApplies(q: Db | Tx, actionCode: string, amount: string, branchId: number | null): Promise<boolean> {
+    const r = await q.query(
+      `SELECT 1 FROM approval_policy WHERE is_active AND action_code = $1 AND min_amount <= $2::numeric AND (branch_id IS NULL OR branch_id = $3) LIMIT 1`,
+      [actionCode, amount, branchId]);
+    return (r.rowCount ?? 0) > 0;
   }
 
   async decide(actor: AuthUser, requestId: number, decision: 'APPROVE' | 'REJECT', comment?: string): Promise<{ status: string }> {
@@ -114,6 +132,9 @@ export class ApprovalsService {
       await this.audit.record(tx, { actorUserId: actor.id, action: `approval.${decision.toLowerCase()}`, entityType: 'approval_request',
         entityId: requestId, branchId, details: { resultingStatus: status, comment: comment ?? null } });
 
+      if (status === 'REJECTED') {
+        await this.actions.get(req.action_code)?.onClosedWithoutApproval?.(tx, req);
+      }
       if (status === 'APPROVED') {
         const action = this.actions.get(req.action_code);
         if (!action) throw new DomainError('UNKNOWN_ACTION', `Veprim i panjohur: ${req.action_code}`, 500);
@@ -129,8 +150,10 @@ export class ApprovalsService {
     await withTransaction(this.db, async (tx) => {
       const res = await tx.query(
         `UPDATE approval_request SET status = 'CANCELLED', decided_at = now()
-          WHERE id = $1 AND requested_by = $2 AND status = 'PENDING' RETURNING branch_id`, [requestId, actor.id]);
+          WHERE id = $1 AND requested_by = $2 AND status = 'PENDING' RETURNING *`, [requestId, actor.id]);
       if (!res.rowCount) throw new DomainError('CANNOT_CANCEL', 'Mund të anuloni vetëm kërkesat tuaja që janë në pritje', 409);
+      const row = res.rows[0] as ApprovalRequestRow;
+      await this.actions.get(row.action_code)?.onClosedWithoutApproval?.(tx, row);
       await this.audit.record(tx, { actorUserId: actor.id, action: 'approval.cancelled', entityType: 'approval_request', entityId: requestId });
     });
   }
