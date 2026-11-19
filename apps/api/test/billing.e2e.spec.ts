@@ -23,6 +23,9 @@ beforeAll(async () => {
   keeper = await userWithRole(app, pool, 'magazinier@temaj.test', 'WAREHOUSE_KEEPER', 'PZ');
   cashier = await userWithRole(app, pool, 'arketar@temaj.test', 'CASHIER', 'PZ');
   acct = await userWithRole(app, pool, 'kontabilist@temaj.test', 'ACCOUNTANT', null);
+  const reg = await pool.query<{ id: string }>(`SELECT id FROM cash_register WHERE code = 'ARKA-PZ'`);
+  const opened = await http().post(`/api/cash/registers/${reg.rows[0]?.id}/open`).set(auth(cashier.token));
+  if (opened.status !== 201) throw new Error(JSON.stringify(opened.body));
   await http().post('/api/inventory/receipts').set(auth(keeper.token)).send({ warehouseId: WPZ, sku: 'TEST-WC-01', qty: '50', documentRef: 'HYRJE', idempotencyKey: key() });
   await http().post('/api/sales/prices').set(auth(salesMgr.token)).send({ sku: 'TEST-WC-01', validFrom: '2020-01-01', unitPrice: '99.99' });
   cashCust = (await http().post('/api/sales/customers').set(auth(seller.token)).send({ code: 'KL-CASH', name: 'Klient me para në dorë', kind: 'PERSON' })).body.id;

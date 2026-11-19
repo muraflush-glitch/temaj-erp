@@ -51,6 +51,10 @@ try {
   if (!(await text()).includes('14,4 m²')) throw new Error('Stoku nuk tregon 14,4 m²');
   step('hyrja e mallit (14,40 m² = 10 kuti) u regjistrua dhe shfaqet në stok');
 
+  await page.goto(`${BASE}/arka`, { waitUntil: 'networkidle0' });
+  await waitText('Arka Prishtinë'); await clickButton('Hap arkën'); await waitText('u hap me 0,00 €');
+  step('arka e Prishtinës u hap');
+
   await page.goto(`${BASE}/shitjet`, { waitUntil: 'networkidle0' });
   await page.waitForSelector('#q0'); await type('#q0', '2,88'); await type('#d0', '5');
   await clickButton('Krijo ofertën'); await waitText('u krijua.'); await waitText('Ofertë');
@@ -75,7 +79,26 @@ try {
   if (!t.includes('40,36') || !t.includes('34,20') || !t.includes('6,16')) throw new Error('Libri kryesor nuk i tregon shumat e faturës');
   step('libri kryesor tregon arkën 40,36, të ardhurat 34,20 dhe TVSH-në 6,16');
 
-  for (const path of ['/blerjet', '/aprovimet', '/siguria', '/klientet']) {
+  await page.goto(`${BASE}/shitjet`, { waitUntil: 'networkidle0' }); await waitText('Shiko / printo');
+  await page.evaluate(() => [...document.querySelectorAll('a')].find((a) => a.innerText.includes('Shiko / printo')).click());
+  await waitText('Faturë nr. 1/'); await waitText('DOKUMENT PROVIZOR'); await waitText('Për pagesë');
+  if (!(await text()).includes('40,36 €')) throw new Error('Fatura e printueshme nuk tregon 40,36 €');
+  step('fatura e printueshme hapet, me vulën "dokument provizor"');
+
+  await page.goto(`${BASE}/arka`, { waitUntil: 'networkidle0' }); await waitText('Duhet të jenë në arkë: 40,36 €');
+  await type('input[inputmode="decimal"]', '40,36'); await clickButton('Mbyll arkën'); await waitText('Arka u mbyll pa diferencë');
+  step('arka u mbyll pa diferencë: sistemi priste 40,36 € dhe aq u numëruan');
+
+  await page.goto(`${BASE}/blerjet`, { waitUntil: 'networkidle0' });
+  await type('#scode', 'fur-e2e'); await type('#sname', 'Furnitor nga shfletuesi'); await clickButton('Shto furnitorin'); await waitText('Furnitori u shtua.');
+  await page.waitForSelector('#pp0'); await page.select('#pp0', 'TEST-WC-01'); await type('#pq0', '5'); await type('#pc0', '45');
+  await clickButton('Krijo porosinë'); await waitText('u krijua.');
+  await clickButton('Dërgo porosinë'); await waitText('Porosia u aprovua');
+  await page.waitForSelector('#grdoc'); await type('#grdoc', 'CMR-E2E-1'); await clickButton('Prano mallin e mbetur'); await waitText('Malli u pranua dhe hyri në stok');
+  await type('#sinv', 'INV-E2E-1'); await clickButton('Regjistro faturën'); await waitText('Fatura përputhet me porosinë dhe pranimin.');
+  step('blerja nga ekrani: furnitor → porosi 225 € → pranim malli → faturë që përputhet');
+
+  for (const path of ['/aprovimet', '/siguria', '/klientet']) {
     await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle0' });
     if ((await text()).includes('Application error')) throw new Error(`Faqja ${path} ka gabim`);
   }

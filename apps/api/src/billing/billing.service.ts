@@ -6,6 +6,7 @@ import { DomainError, forbidden, notFound } from '../common/errors';
 import { AuthUser } from '../common/request';
 import { DB } from '../database/database.module';
 import { Db, one, Tx, withTransaction } from '../database/db';
+import { CashService } from '../cash/cash.service';
 import { LedgerService } from '../ledger/ledger.service';
 
 type Role = 'RECEIVABLE' | 'SALES_REVENUE' | 'VAT_OUTPUT' | 'CASH' | 'BANK' | 'CUSTOMER_ADVANCES';
@@ -32,6 +33,7 @@ export class BillingService {
     private readonly perms: PermissionService,
     private readonly audit: AuditService,
     private readonly ledger: LedgerService,
+    private readonly cash: CashService,
   ) {}
 
   private async accounts(tx: Tx, entityId: number, roles: Role[]): Promise<Record<Role, number>> {
@@ -137,6 +139,8 @@ export class BillingService {
       `SELECT COALESCE(sum(x), 0)::text AS allocated, ($2::numeric - COALESCE(sum(x), 0))::text AS advance, to_char(CURRENT_DATE, 'YYYY-MM-DD') AS today FROM unnest($1::numeric[]) AS t(x)`,
       [open.rows.map((r) => r.take), p.amount]);
     if (!sums) throw new Error('Shumat mungojnë');
+    // Para në dorë pranohen vetëm me arkë të hapur; arkëtimi lidhet me seancën e ditës.
+    const cashSessionId = p.method === 'CASH' ? await this.cash.openSessionId(tx, p.branchId) : null;
     const acc = await this.accounts(tx, p.entityId, ['RECEIVABLE', 'CUSTOMER_ADVANCES', p.method]);
     const entryId = await this.ledger.postSystemEntry(tx, actor.id, {
       legalEntityId: p.entityId, entryDate: sums.today, description: `Arkëtim nga klienti #${p.customerId} (${p.method === 'CASH' ? 'arkë' : 'bankë'})`,
@@ -148,9 +152,9 @@ export class BillingService {
       ],
     });
     const pay = await one<{ id: string }>(tx,
-      `INSERT INTO customer_payment(legal_entity_id, customer_id, branch_id, method, amount, received_on, reference, journal_entry_id, received_by, idempotency_key)
-       VALUES ($1, $2, $3, $4, $5::numeric, $6::date, $7, $8, $9, $10) RETURNING id`,
-      [p.entityId, p.customerId, p.branchId, p.method, p.amount, sums.today, p.reference ?? null, entryId, actor.id, p.idempotencyKey]);
+      `INSERT INTO customer_payment(legal_entity_id, customer_id, branch_id, method, amount, received_on, reference, journal_entry_id, received_by, idempotency_key, cash_session_id)
+       VALUES ($1, $2, $3, $4, $5::numeric, $6::date, $7, $8, $9, $10, $11) RETURNING id`,
+      [p.entityId, p.customerId, p.branchId, p.method, p.amount, sums.today, p.reference ?? null, entryId, actor.id, p.idempotencyKey, cashSessionId]);
     const id = Number(pay?.id);
     for (const r of open.rows) {
       await tx.query('INSERT INTO payment_allocation(payment_id, invoice_id, amount) VALUES ($1, $2, $3::numeric)', [id, r.invoice_id, r.take]);
@@ -173,6 +177,23 @@ export class BillingService {
               (SELECT COALESCE(sum(p.amount), 0) - COALESCE((SELECT sum(a.amount) FROM payment_allocation a JOIN customer_payment p2 ON p2.id = a.payment_id WHERE p2.customer_id = $1), 0)
                  FROM customer_payment p WHERE p.customer_id = $1)::text AS advances`, [customerId]);
     return { creditLimit: c.credit_limit, openTotal: t?.open ?? '0', unappliedAdvances: t?.advances ?? '0', openInvoices: inv.rows };
+  }
+
+  async getInvoice(actor: AuthUser, invoiceId: number) {
+    const i = await one<{ branch_id: string }>(this.db,
+      `SELECT i.id, i.branch_id, i.fiscal_year, i.invoice_no, to_char(i.invoice_date, 'YYYY-MM-DD') AS invoice_date, to_char(i.due_date, 'YYYY-MM-DD') AS due_date,
+              i.vat_rate::text, i.net::text, i.vat::text, i.gross::text, i.is_provisional_tax, i.is_fiscalized, i.order_id,
+              c.code AS customer_code, c.name AS customer_name, c.phone AS customer_phone,
+              b.name AS branch_name, b.city AS branch_city, e.name AS seller_name, e.tax_number AS seller_tax_number, e.verified AS seller_verified,
+              o.open_amount::text
+         FROM sales_invoice i JOIN customer c ON c.id = i.customer_id JOIN branch b ON b.id = i.branch_id JOIN legal_entity e ON e.id = i.legal_entity_id
+         JOIN customer_open_invoice o ON o.invoice_id = i.id WHERE i.id = $1`, [invoiceId]);
+    if (!i) throw notFound('Fatura');
+    if (!(await this.perms.has(actor.id, 'sales.read', Number(i.branch_id)))) throw forbidden();
+    const lines = await this.db.query(
+      `SELECT l.line_no, p.sku, p.name, p.base_uom, l.qty::text, l.unit_price::text, l.discount_pct::text, l.net::text, l.vat::text
+         FROM sales_invoice_line l JOIN product p ON p.id = l.product_id WHERE l.invoice_id = $1 ORDER BY l.line_no`, [invoiceId]);
+    return { ...i, lines: lines.rows };
   }
 
   async invoices(actor: AuthUser) {

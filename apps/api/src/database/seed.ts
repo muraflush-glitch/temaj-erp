@@ -37,6 +37,8 @@ export const PERMISSIONS: [string, string][] = [
   ['approvals.sales.decide', 'Aprovo përjashtimet e shitjes (zbritje, çmim, nuanca)'],
   ['sales.invoice.create', 'Lësho fatura shitjeje'],
   ['payments.receive', 'Regjistro arkëtime nga klientët'],
+  ['cash.session.manage', 'Hap dhe mbyll arkën'],
+  ['approvals.cash.decide', 'Aprovo mungesat dhe tepricat e arkës'],
   ['suppliers.manage', 'Krijo dhe ndrysho furnitorë'],
   ['purchase.read', 'Shiko porositë e blerjes'],
   ['purchase.order.create', 'Krijo dhe dërgo porosi blerjeje'],
@@ -49,11 +51,11 @@ export const ROLES: { code: string; name: string; permissions: string[] }[] = [
   { code: 'SECURITY_APPROVER', name: 'Aprovues i qasjes', permissions: ['org.read', 'approvals.access.decide', 'audit.read', 'admin.roles.revoke'] },
   { code: 'BRANCH_MANAGER', name: 'Menaxher dege', permissions: ['org.read', 'admin.roles.request'] },
   { code: 'ACCOUNTANT', name: 'Kontabilist', permissions: ['org.read', 'ledger.read', 'ledger.entry.create', 'ledger.entry.post', 'ledger.entry.reverse', 'ledger.period.request_close'] },
-  { code: 'FINANCE_APPROVER', name: 'Aprovues financiar', permissions: ['org.read', 'ledger.read', 'approvals.ledger.decide'] },
+  { code: 'FINANCE_APPROVER', name: 'Aprovues financiar', permissions: ['org.read', 'ledger.read', 'approvals.ledger.decide', 'approvals.cash.decide'] },
   { code: 'PURCHASER', name: 'Blerës', permissions: ['org.read', 'stock.read', 'purchase.read', 'suppliers.manage', 'purchase.order.create'] },
   { code: 'PURCHASE_APPROVER', name: 'Aprovues blerjesh', permissions: ['org.read', 'purchase.read', 'approvals.purchase.decide'] },
   { code: 'AP_CLERK', name: 'Financë — faturat e furnitorëve', permissions: ['org.read', 'purchase.read', 'purchase.invoice.enter'] },
-  { code: 'CASHIER', name: 'Arkëtar', permissions: ['org.read', 'customers.read', 'sales.read', 'sales.invoice.create', 'payments.receive'] },
+  { code: 'CASHIER', name: 'Arkëtar', permissions: ['org.read', 'customers.read', 'sales.read', 'sales.invoice.create', 'payments.receive', 'cash.session.manage'] },
   { code: 'SALESPERSON', name: 'Shitës', permissions: ['org.read', 'stock.read', 'customers.read', 'customers.manage', 'sales.read', 'sales.order.create', 'sales.order.confirm'] },
   { code: 'SALES_MANAGER', name: 'Menaxher shitjesh', permissions: ['org.read', 'stock.read', 'customers.read', 'customers.manage', 'customers.credit.manage', 'pricing.manage', 'sales.read', 'approvals.sales.decide'] },
   { code: 'WAREHOUSE_KEEPER', name: 'Magazinier', permissions: ['org.read', 'stock.read', 'sales.read', 'sales.deliver', 'purchase.read', 'stock.receive', 'stock.dispatch', 'stock.transfer.dispatch', 'stock.transfer.receive', 'stock.adjust.request'] },
@@ -64,6 +66,7 @@ export const ROLES: { code: string; name: string; permissions: string[] }[] = [
 
 export const TEST_ACCOUNTS: [string, string, string][] = [
   ['T-1000', 'Arka (test)', 'ASSET'],
+  ['T-1050', 'Para në rrugë për bankë (test)', 'ASSET'],
   ['T-1100', 'Banka (test)', 'ASSET'],
   ['T-1200', 'Klientë — të arkëtueshme (test)', 'ASSET'],
   ['T-1300', 'Avanse ndaj punonjësve (test)', 'ASSET'],
@@ -72,7 +75,9 @@ export const TEST_ACCOUNTS: [string, string, string][] = [
   ['T-2400', 'TVSH e llogaritur (test)', 'LIABILITY'],
   ['T-3000', 'Kapitali (test)', 'EQUITY'],
   ['T-4000', 'Të ardhura (test)', 'REVENUE'],
+  ['T-4100', 'Teprica arke (test)', 'REVENUE'],
   ['T-6000', 'Shpenzime bonusesh (test)', 'EXPENSE'],
+  ['T-6100', 'Mungesa arke (test)', 'EXPENSE'],
 ];
 
 export async function seed(pool: Pool, opts: { adminPassword: string; approverPassword: string; demoPassword?: string }): Promise<void> {
@@ -122,6 +127,14 @@ export async function seed(pool: Pool, opts: { adminPassword: string; approverPa
       `INSERT INTO approval_policy(action_code, branch_id, min_amount, required_approvals, approver_permission, escalate_after_hours)
        SELECT 'sales.order_exception', NULL, 0, 1, 'approvals.sales.decide', 8
         WHERE NOT EXISTS (SELECT 1 FROM approval_policy WHERE action_code = 'sales.order_exception' AND branch_id IS NULL)`);
+    // Çdo diferencë në mbylljen e arkës kërkon aprovim (pragu 0 është PROVIZOR; drejtoria mund të vendosë tolerancë).
+    await c.query(
+      `INSERT INTO approval_policy(action_code, branch_id, min_amount, required_approvals, approver_permission, escalate_after_hours)
+       SELECT 'cash.close_difference', NULL, 0, 1, 'approvals.cash.decide', 24
+        WHERE NOT EXISTS (SELECT 1 FROM approval_policy WHERE action_code = 'cash.close_difference' AND branch_id IS NULL)`);
+    await c.query(
+      `INSERT INTO cash_register(branch_id, code, name) SELECT b.id, 'ARKA-' || b.code, 'Arka ' || b.city FROM branch b
+        WHERE NOT EXISTS (SELECT 1 FROM cash_register r WHERE r.branch_id = b.id)`);
     // PRAG TESTUES: porositë e blerjes nga 1000 € e lart kërkojnë aprovim. Vlerën reale e vendos drejtoria (DEC-G50-01).
     await c.query(
       `INSERT INTO approval_policy(action_code, branch_id, min_amount, required_approvals, approver_permission, escalate_after_hours)
@@ -157,7 +170,8 @@ export async function seed(pool: Pool, opts: { adminPassword: string; approverPa
     await c.query(
       `INSERT INTO account_role(legal_entity_id, role, account_id)
        SELECT $1, m.role, a.id FROM (VALUES ('RECEIVABLE', 'T-1200'), ('SALES_REVENUE', 'T-4000'), ('VAT_OUTPUT', 'T-2400'),
-                                            ('CASH', 'T-1000'), ('BANK', 'T-1100'), ('CUSTOMER_ADVANCES', 'T-2300')) AS m(role, code)
+                                            ('CASH', 'T-1000'), ('BANK', 'T-1100'), ('CUSTOMER_ADVANCES', 'T-2300'),
+                                            ('CASH_IN_TRANSIT', 'T-1050'), ('CASH_SHORTAGE', 'T-6100'), ('CASH_SURPLUS', 'T-4100')) AS m(role, code)
          JOIN ledger_account a ON a.legal_entity_id = $1 AND a.code = m.code
        ON CONFLICT DO NOTHING`, [leId]);
 

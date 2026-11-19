@@ -38,6 +38,8 @@ const PG_MESSAGES: Record<string, [string, string, number]> = {
   PURCHASE_DOCUMENT_IMMUTABLE: ['IMMUTABLE', 'Pranimet dhe faturat e regjistruara nuk ndryshohen', 409],
   FINANCIAL_DOCUMENT_IMMUTABLE: ['IMMUTABLE', 'Faturat dhe arkëtimet e regjistruara nuk ndryshohen', 409],
   OVER_ALLOCATION: ['OVER_ALLOCATION', 'Pagesa e shpërndarë e kalon vlerën e faturës ose të pagesës', 422],
+  CASH_SESSION_NOT_OPEN: ['CASH_SESSION_NOT_OPEN', 'Arka e degës nuk është e hapur', 409],
+  CASH_SESSION_IMMUTABLE: ['IMMUTABLE', 'Seanca e mbyllur e arkës nuk ndryshohet', 409],
   AUDIT_LOG_APPEND_ONLY: ['IMMUTABLE', 'Audit trail nuk mund të ndryshohet', 409],
 };
 

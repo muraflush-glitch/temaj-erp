@@ -16,6 +16,7 @@ export function Nav({ me }: { me: Me | null }) {
       <Link href="/">Paneli</Link>
       <Link href="/shitjet">Shitjet</Link>
       <Link href="/klientet">Klientët</Link>
+      <Link href="/arka">Arka</Link>
       <Link href="/blerjet">Blerjet</Link>
       <Link href="/stoku">Stoku</Link>
       <Link href="/libri">Libri kryesor</Link>

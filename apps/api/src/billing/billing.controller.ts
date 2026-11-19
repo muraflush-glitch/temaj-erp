@@ -15,6 +15,9 @@ export class BillingController {
   @Get('invoices')
   invoices(@CurrentUser() u: AuthUser) { return this.billing.invoices(u); }
 
+  @Get('invoices/:id')
+  getInvoice(@CurrentUser() u: AuthUser, @Param('id', ParseIntPipe) id: number) { return this.billing.getInvoice(u, id); }
+
   @Post('orders/:id/invoices')
   invoice(@CurrentUser() u: AuthUser, @Param('id', ParseIntPipe) id: number, @Body() b: unknown) { return this.billing.invoiceOrder(u, id, InvoiceDto.parse(b)); }
 

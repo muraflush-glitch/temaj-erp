@@ -11,6 +11,7 @@ interface Detail { id: string; status: string; on_credit: boolean; customer_name
 interface Customer { id: string; code: string; name: string }
 interface Warehouse { id: string; branch_id: string; code: string; name: string }
 interface StockRow { sku: string; name: string; base_uom: string; lot_code: string | null; shade: string | null; caliber: string | null; available: string }
+interface Invoice { id: string; fiscal_year: number; invoice_no: string; invoice_date: string; customer_name: string; gross: string; open_amount: string }
 interface DraftLine { stockIdx: number; qty: string; discountPct: string }
 
 const STATUS: Record<string, string> = { DRAFT: 'Ofertë', PENDING_APPROVAL: 'Pret aprovim', CONFIRMED: 'Konfirmuar', PARTIALLY_DELIVERED: 'Dorëzuar pjesërisht', DELIVERED: 'Dorëzuar', CANCELLED: 'Anuluar' };
@@ -32,8 +33,12 @@ export default function SalesPage() {
   const [docRef, setDocRef] = useState('');
   const [payMethod, setPayMethod] = useState<'CASH' | 'BANK'>('CASH');
   const [busy, setBusy] = useState(false);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
 
-  const load = useCallback(() => { api<Order[]>('/sales/orders').then(setOrders).catch(() => undefined); }, []);
+  const load = useCallback(() => {
+    api<Order[]>('/sales/orders').then(setOrders).catch(() => undefined);
+    api<Invoice[]>('/sales/invoices').then(setInvoices).catch(() => undefined);
+  }, []);
   const open = useCallback((id: string) => api<Detail>(`/sales/orders/${id}`).then(setDetail).catch((e: Error) => setMsg({ ok: false, text: e.message })), []);
 
   useEffect(() => {
@@ -176,6 +181,18 @@ export default function SalesPage() {
               <tr key={o.id}><td>{o.id}</td><td>{o.order_date}</td><td>{o.branch}</td><td>{o.customer_name}</td>
                 <td><span className="badge">{STATUS[o.status] ?? o.status}</span></td><td style={{ textAlign: 'right' }}>{money(o.total_net)}</td>
                 <td><button className="secondary" onClick={() => open(o.id)}>Hap</button></td></tr>
+            ))}
+          </tbody></table>
+        )}
+      </div>
+      <div className="card">
+        <h2>Faturat</h2>
+        {invoices.length === 0 ? <p className="muted">Asnjë faturë.</p> : (
+          <table><thead><tr><th>Nr.</th><th>Data</th><th>Klienti</th><th style={{ textAlign: 'right' }}>Vlera</th><th style={{ textAlign: 'right' }}>E papaguar</th><th /></tr></thead><tbody>
+            {invoices.map((i) => (
+              <tr key={i.id}><td>{i.invoice_no}/{i.fiscal_year}</td><td>{i.invoice_date}</td><td>{i.customer_name}</td>
+                <td style={{ textAlign: 'right' }}>{money(i.gross)}</td><td style={{ textAlign: 'right' }}>{money(i.open_amount)}</td>
+                <td><a href={`/fatura/${i.id}`}>Shiko / printo</a></td></tr>
             ))}
           </tbody></table>
         )}
