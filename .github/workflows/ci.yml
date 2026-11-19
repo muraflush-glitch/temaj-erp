@@ -60,9 +60,6 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: devcontainers/ci@v0.3
-        env:
-          # Vegla e devcontainer-it nuk punon ende me mënyrën e re të ndërtimit (bake) të Docker Compose në GitHub.
-          COMPOSE_BAKE: "false"
         with:
           push: never
           runCmd: |

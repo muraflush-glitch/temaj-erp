@@ -3,6 +3,16 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# Databaza PostgreSQL brenda të njëjtit mjedis (vetëm për provë).
+if ! command -v psql >/dev/null 2>&1; then
+  sudo apt-get update -qq
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq postgresql postgresql-contrib >/dev/null
+fi
+sudo service postgresql start
+for i in $(seq 1 30); do sudo -u postgres pg_isready -q && break; sleep 1; done
+sudo -u postgres psql -qc "DO \$\$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'temaj') THEN CREATE ROLE temaj LOGIN SUPERUSER PASSWORD 'temaj-prove'; END IF; END \$\$"
+sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname = 'temaj_erp'" | grep -q 1 || sudo -u postgres createdb -O temaj temaj_erp
+
 npm ci
 npm run build
 
@@ -19,12 +29,7 @@ if [ ! -f .env.prove ]; then
 fi
 set -a; . ./.env.prove; set +a
 
-# Databaza mund të dojë disa sekonda për t'u nisur.
-for i in $(seq 1 30); do
-  node apps/api/dist/database/migrate.cli.js && break
-  [ "$i" = 30 ] && { echo "Databaza nuk u përgjigj"; exit 1; }
-  sleep 2
-done
+node apps/api/dist/database/migrate.cli.js
 node apps/api/dist/database/seed.cli.js
 
 cat > HYRJA.txt <<TXT

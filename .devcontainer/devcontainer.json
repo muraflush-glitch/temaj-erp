@@ -1,8 +1,10 @@
 {
   "name": "Temaj ERP — mjedis provë",
-  "dockerComposeFile": "docker-compose.yml",
-  "service": "app",
-  "workspaceFolder": "/workspaces/temaj-erp",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "containerEnv": {
+    "DATABASE_URL": "postgres://temaj:temaj-prove@localhost:5432/temaj_erp",
+    "APP_ENV": "development"
+  },
   "forwardPorts": [3000],
   "portsAttributes": {
     "3000": { "label": "Temaj ERP", "onAutoForward": "openBrowser" },
