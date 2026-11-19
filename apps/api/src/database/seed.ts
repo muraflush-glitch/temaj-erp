@@ -12,13 +12,31 @@ export const PERMISSIONS: [string, string][] = [
   ['admin.roles.revoke', 'Hiq një rol menjëherë'],
   ['approvals.access.decide', 'Aprovo ose refuzo kërkesat për qasje'],
   ['audit.read', 'Lexo audit trail-in'],
+  ['ledger.read', 'Shiko librin kryesor'],
+  ['ledger.entry.create', 'Krijo regjistrime kontabël (draft)'],
+  ['ledger.entry.post', 'Posto regjistrime kontabël'],
+  ['ledger.entry.reverse', 'Kthe (storno) regjistrime të postuara'],
+  ['ledger.period.request_close', 'Kërko mbylljen e periudhës (kalon në aprovim)'],
+  ['approvals.ledger.decide', 'Aprovo ose refuzo mbylljen e periudhave'],
 ];
 
 export const ROLES: { code: string; name: string; permissions: string[] }[] = [
   { code: 'SYSTEM_ADMIN', name: 'Administrator i sistemit', permissions: ['org.read', 'admin.users.manage', 'admin.roles.request', 'admin.roles.revoke', 'audit.read'] },
   { code: 'SECURITY_APPROVER', name: 'Aprovues i qasjes', permissions: ['org.read', 'approvals.access.decide', 'audit.read', 'admin.roles.revoke'] },
   { code: 'BRANCH_MANAGER', name: 'Menaxher dege', permissions: ['org.read', 'admin.roles.request'] },
+  { code: 'ACCOUNTANT', name: 'Kontabilist', permissions: ['org.read', 'ledger.read', 'ledger.entry.create', 'ledger.entry.post', 'ledger.entry.reverse', 'ledger.period.request_close'] },
+  { code: 'FINANCE_APPROVER', name: 'Aprovues financiar', permissions: ['org.read', 'ledger.read', 'approvals.ledger.decide'] },
   { code: 'EMPLOYEE', name: 'Punonjës', permissions: ['org.read'] },
+];
+
+export const TEST_ACCOUNTS: [string, string, string][] = [
+  ['T-1000', 'Arka (test)', 'ASSET'],
+  ['T-1100', 'Banka (test)', 'ASSET'],
+  ['T-1300', 'Avanse ndaj punonjësve (test)', 'ASSET'],
+  ['T-2000', 'Detyrime ndaj furnitorëve (test)', 'LIABILITY'],
+  ['T-3000', 'Kapitali (test)', 'EQUITY'],
+  ['T-4000', 'Të ardhura (test)', 'REVENUE'],
+  ['T-6000', 'Shpenzime bonusesh (test)', 'EXPENSE'],
 ];
 
 export async function seed(pool: Pool, opts: { adminPassword: string; approverPassword: string }): Promise<void> {
@@ -54,6 +72,22 @@ export async function seed(pool: Pool, opts: { adminPassword: string; approverPa
       `INSERT INTO approval_policy(action_code, branch_id, min_amount, required_approvals, approver_permission, escalate_after_hours)
        SELECT 'access.grant_role', NULL, 0, 1, 'approvals.access.decide', 24
         WHERE NOT EXISTS (SELECT 1 FROM approval_policy WHERE action_code = 'access.grant_role' AND branch_id IS NULL)`);
+
+    await c.query(
+      `INSERT INTO approval_policy(action_code, branch_id, min_amount, required_approvals, approver_permission, escalate_after_hours)
+       SELECT 'ledger.close_period', NULL, 0, 1, 'approvals.ledger.decide', 48
+        WHERE NOT EXISTS (SELECT 1 FROM approval_policy WHERE action_code = 'ledger.close_period' AND branch_id IS NULL)`);
+
+    // LLOGARI TESTUESE — jo plani kontabël i Temaj-it. Plani real pret kontabilistin (OPEN-05).
+    for (const [code, name, type] of TEST_ACCOUNTS) {
+      await c.query(
+        `INSERT INTO ledger_account(legal_entity_id, code, name, type, is_provisional) VALUES ($1, $2, $3, $4, TRUE)
+         ON CONFLICT (legal_entity_id, code) DO NOTHING`, [leId, code, name, type]);
+    }
+    await c.query(
+      `INSERT INTO fiscal_period(legal_entity_id, name, start_date, end_date)
+       SELECT $1, 'Nëntor 2026 (test)', DATE '2026-11-01', DATE '2026-11-30'
+        WHERE NOT EXISTS (SELECT 1 FROM fiscal_period WHERE legal_entity_id = $1)`, [leId]);
 
     const users: [string, string, string, string][] = [
       ['admin@temaj.test', 'Administrator (test)', opts.adminPassword, 'SYSTEM_ADMIN'],

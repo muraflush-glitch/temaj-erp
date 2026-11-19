@@ -17,6 +17,8 @@ import { PermissionService } from './auth/permission.service';
 import { AllExceptionsFilter } from './common/errors';
 import { Public } from './common/request';
 import { DatabaseModule } from './database/database.module';
+import { LedgerController } from './ledger/ledger.controller';
+import { LedgerService } from './ledger/ledger.service';
 import { OrgController } from './org/org.controller';
 
 @Controller('health')
@@ -28,10 +30,10 @@ class HealthController {
 
 @Module({
   imports: [DatabaseModule],
-  controllers: [HealthController, AuthController, OrgController, ApprovalsController, AccessController, AuditController],
+  controllers: [HealthController, AuthController, OrgController, ApprovalsController, AccessController, AuditController, LedgerController],
   providers: [
     AuditService, PermissionService, AuthService, ApprovalsService, AccessService,
-    OutboxService, DevNotificationSink, EscalationService, WorkerService,
+    LedgerService, OutboxService, DevNotificationSink, EscalationService, WorkerService,
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],
