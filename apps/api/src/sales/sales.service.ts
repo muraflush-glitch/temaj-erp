@@ -81,6 +81,17 @@ export class SalesService implements OnModuleInit {
     });
   }
 
+  /** Çmimi aktual i listës për çdo produkt (neto, për njësinë bazë). */
+  async prices(actor: AuthUser) {
+    if (!(await this.perms.has(actor.id, 'sales.read', 'any')) && !(await this.perms.has(actor.id, 'pricing.manage', 'any'))) throw forbidden();
+    const res = await this.db.query(
+      `SELECT p.sku, p.name, p.base_uom, pr.unit_price::text, to_char(pr.valid_from, 'YYYY-MM-DD') AS valid_from
+         FROM product p LEFT JOIN LATERAL (SELECT unit_price, valid_from FROM product_price pp WHERE pp.product_id = p.id AND pp.valid_from <= CURRENT_DATE
+                                            ORDER BY pp.valid_from DESC LIMIT 1) pr ON TRUE
+        WHERE p.is_active ORDER BY p.sku`);
+    return res.rows;
+  }
+
   async createOrder(actor: AuthUser, input: OrderInput): Promise<{ id: number; created: boolean }> {
     return withTransaction(this.db, async (tx) => {
       const dup = await one<{ id: string }>(tx, 'SELECT id FROM sales_order WHERE created_by = $1 AND idempotency_key = $2', [actor.id, input.idempotencyKey]);

@@ -19,8 +19,10 @@ export function Nav({ me }: { me: Me | null }) {
       <Link href="/arka">Arka</Link>
       <Link href="/blerjet">Blerjet</Link>
       <Link href="/stoku">Stoku</Link>
+      <Link href="/produktet">Produktet</Link>
       <Link href="/libri">Libri kryesor</Link>
       <Link href="/aprovimet">Aprovimet</Link>
+      <Link href="/perdoruesit">Përdoruesit</Link>
       <Link href="/siguria">Siguria</Link>
       <span className="grow" />
       {me && <span>{me.displayName}</span>}

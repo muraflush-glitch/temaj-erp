@@ -98,6 +98,27 @@ try {
   await type('#sinv', 'INV-E2E-1'); await clickButton('Regjistro faturën'); await waitText('Fatura përputhet me porosinë dhe pranimin.');
   step('blerja nga ekrani: furnitor → porosi 225 € → pranim malli → faturë që përputhet');
 
+  await page.goto(`${BASE}/produktet`, { waitUntil: 'networkidle0' });
+  await type('#psku', 'e2e-lavaman'); await type('#pname', 'Lavaman nga shfletuesi'); await page.select('#puom', 'PIECE');
+  await clickButton('Shto produktin'); await waitText('Produkti u shtua.'); await waitText('E2E-LAVAMAN'); await waitText('pa çmim');
+  await page.select('#prsku', 'E2E-LAVAMAN'); await type('#prval', '55'); await clickButton('Vendos çmimin'); await waitText('Çmimi u vendos.'); await waitText('55,00 €');
+  step('produkt i ri dhe çmimi i tij u vendosën nga ekrani');
+
+  await page.goto(`${BASE}/stoku`, { waitUntil: 'networkidle0' });
+  await page.waitForSelector('#trqty'); await type('#trqty', '1,44'); await type('#trdoc', 'TR-E2E-1');
+  await clickButton('Nis transferin'); await waitText('Malli është në rrugë'); await waitText('Në rrugë');
+  await clickButton('Prano të plotë'); await waitText('Pranimin duhet ta konfirmojë një person tjetër nga dërguesi');
+  step('transferi u nis; dërguesi nuk e pranon dot vetë (duhet personi i degës tjetër)');
+  await type('#adqty', '1,44'); await type('#adreason', 'Kuti e thyer gjatë zhvendosjes');
+  await clickButton('Kërko korrigjimin'); await waitText('Korrigjimi u dërgua për aprovim');
+  step('korrigjimi i stokut u dërgua për aprovim, pa e ndryshuar stokun');
+
+  await page.goto(`${BASE}/perdoruesit`, { waitUntil: 'networkidle0' });
+  await type('#uemail', 'punonjes.e2e@temaj.test'); await type('#uname', 'Punonjës nga shfletuesi'); await type('#upw', 'Fjalekalim-E2E-12345');
+  await clickButton('Krijo përdoruesin'); await waitText('Përdoruesi u krijua.'); await waitText('punonjes.e2e@temaj.test');
+  await type('#greason', 'Rol për provë nga ekrani'); await clickButton('Kërko rolin'); await waitText('u dërgua për aprovim te një person tjetër');
+  step('përdorues i ri u krijua; roli u kërkua dhe pret aprovimin e një personi tjetër');
+
   for (const path of ['/aprovimet', '/siguria', '/klientet']) {
     await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle0' });
     if ((await text()).includes('Application error')) throw new Error(`Faqja ${path} ka gabim`);

@@ -196,7 +196,7 @@ export async function seed(pool: Pool, opts: { adminPassword: string; approverPa
          ON CONFLICT (email) DO UPDATE SET display_name = EXCLUDED.display_name RETURNING id`, [await hashPassword(opts.demoPassword)]);
       await c.query(
         `INSERT INTO user_role(user_id, role_id, branch_id)
-         SELECT $1, id, NULL FROM role WHERE code IN ('SALESPERSON', 'WAREHOUSE_KEEPER', 'CASHIER', 'CATALOG_MANAGER', 'PURCHASER', 'ACCOUNTANT', 'AP_CLERK')
+         SELECT $1, id, NULL FROM role WHERE code IN ('SALESPERSON', 'WAREHOUSE_KEEPER', 'CASHIER', 'CATALOG_MANAGER', 'PURCHASER', 'ACCOUNTANT', 'AP_CLERK', 'SALES_MANAGER', 'SYSTEM_ADMIN')
          ON CONFLICT DO NOTHING`, [d.rows[0]?.id]);
       await c.query(
         `INSERT INTO product_price(product_id, valid_from, unit_price, set_by)
