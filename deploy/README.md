@@ -1,7 +1,7 @@
 # Ngritja e mjedisit provë (Staging)
 
 > Ky mjedis është vetëm për provë: të dhëna testuese dhe rregulla tatimore/kontabël provizore. Mos fusni të dhëna reale.
-> **Statusi i këtyre skedarëve:** të shkruar, por ende të paprovuar në një server të vërtetë (në mjedisin e zhvillimit nuk kishte Docker aktiv).
+> **Statusi i këtyre skedarëve:** imazhi, databaza, API-ja dhe web-i provohen automatikisht në GitHub pas çdo ndryshimi (ndërtim, nisje, hyrje në sistem). Pjesa e HTTPS-it (Caddy me domen të vërtetë) nuk mund të provohet atje dhe mbetet për t'u verifikuar në serverin e parë.
 
 ## Çfarë duhet
 1. Një server Linux me Docker (2 vCPU, 4 GB RAM mjaftojnë për provë).
