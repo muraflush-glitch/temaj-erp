@@ -36,6 +36,9 @@ export class SalesController {
   @Post('customers')
   createCustomer(@CurrentUser() u: AuthUser, @Body() b: unknown) { return this.sales.createCustomer(u, CustomerDto.parse(b)); }
 
+  @Get('prices')
+  prices(@CurrentUser() u: AuthUser) { return this.sales.prices(u); }
+
   @Post('prices')
   @HttpCode(204)
   async setPrice(@CurrentUser() u: AuthUser, @Body() b: unknown): Promise<void> { await this.sales.setPrice(u, PriceDto.parse(b)); }

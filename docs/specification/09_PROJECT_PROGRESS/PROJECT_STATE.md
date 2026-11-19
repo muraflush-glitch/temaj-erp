@@ -67,3 +67,7 @@ After each Claude development session, append a dated entry including source has
 - Ndërtuar: seancat e arkës me aprovim të diferencave, fatura e printueshme, formularët e blerjeve, skedarët e Docker-it.
 - Teste: 160/160 + 19 hapa në shfletues. Detajet: `docs/progress/2026-11-19-arka-blerjet-printimi.md`.
 - Skedarët e ngritjes në server janë të paprovuar. Asnjë server nuk ekziston ende.
+
+## 2026-11-19 — Formularët e mbetur (Development)
+- Ndërtuar: ekranet për produktet dhe çmimet, përdoruesit dhe rolet, transferet dhe korrigjimet e stokut.
+- Teste: 160/160 + 23 hapa në shfletues. Detajet: `docs/progress/2026-11-19-formularet-e-mbetur.md`.

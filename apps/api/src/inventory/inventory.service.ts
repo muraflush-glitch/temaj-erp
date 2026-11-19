@@ -203,7 +203,7 @@ export class InventoryService implements OnModuleInit {
     const wh = await this.warehouse(this.db, warehouseId);
     if (!(await this.perms.has(actor.id, 'stock.read', wh.branchId))) throw forbidden();
     const res = await this.db.query(
-      `SELECT p.sku, p.name, p.base_uom, l.lot_code, l.shade, l.caliber, b.on_hand::text, b.reserved::text, (b.on_hand - b.reserved)::text AS available,
+      `SELECT p.sku, p.name, p.base_uom, b.lot_id, l.lot_code, l.shade, l.caliber, b.on_hand::text, b.reserved::text, (b.on_hand - b.reserved)::text AS available,
               CASE WHEN p.base_uom = 'M2' THEN trunc(b.on_hand / (p.m2_per_piece * p.pieces_per_box))
                    WHEN p.pieces_per_box IS NOT NULL THEN trunc(b.on_hand / p.pieces_per_box) END::text AS full_boxes,
               CASE WHEN p.base_uom = 'M2' THEN round(mod(b.on_hand, p.m2_per_piece * p.pieces_per_box) / p.m2_per_piece)
