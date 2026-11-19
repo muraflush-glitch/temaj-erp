@@ -1,0 +1,325 @@
+{
+  "package_version": "0.9",
+  "files": [
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T01_Arka_dhe_Bankat.md",
+      "sha256": "f6117c97890615011360996c2ac4c4a2f86122bfddc7fce042aa1154d53a96f8",
+      "bytes": 1021
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T02_Klientt_dhe_Borxhet.md",
+      "sha256": "d2bb714500117cce0e3cbd2b0102239c1b68599883869fe93307034ffacc10f6",
+      "bytes": 1084
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T03_Furnitort.md",
+      "sha256": "2f5446165dfd886af5f66ff20ae0ed25138ddd548f5d8f25000d8cfd1fc5cff1",
+      "bytes": 1163
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T04_Shpenzimet.md",
+      "sha256": "384c3a89cfc2cff0d07ef362f38791ca2478e7bd39a0d602a93ca495eb417cad",
+      "bytes": 1176
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T05_Puntort_dhe_Listpagesat.md",
+      "sha256": "b0f3beafa3c890ddae9a8a780022b7fa5c48597dcc23c375dc20c517b10f101a",
+      "bytes": 1220
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T06_Menaxhimi_i_Degve.md",
+      "sha256": "42b1bcface094f5b14e1b777545172ed470f01c1bdd9eccc7a4bf0c0229b7db8",
+      "bytes": 1249
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T07_Raportet_Financiare.md",
+      "sha256": "f4394ecc7bb36b4127510522a2acb17a434a91e0d105aa56207386d61358defa",
+      "bytes": 1489
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T08_Kontrolli_dhe_Siguria.md",
+      "sha256": "f374dc9520d17225379f344c615f5d9a5955606383aaef219038927bd8d21d5e",
+      "bytes": 1411
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T09_Integrimet_dhe_Migrimi.md",
+      "sha256": "6c4fbc97ef116c953f1981d24856be4f355f1855eecb7decaa472720458934ca",
+      "bytes": 1401
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T10_Shitjet_dhe_Faturimi.md",
+      "sha256": "187223df4a798a70c08bf5397adb2d1a1507883a84a5ffba32a185937cfb8120",
+      "bytes": 1365
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T11_Magazina__Stoku_dhe_Produktet.md",
+      "sha256": "208f4c155d7232d0cccb1fde9a01df5cedea8b65212d1b3ae896256eb2986473",
+      "bytes": 1533
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T12_Kontabiliteti_i_Prgjithshm.md",
+      "sha256": "d4483b36728ef71199fa4a76a50db79e4e928bd7d1fca794136905ea045899e7",
+      "bytes": 1554
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T13_Arkitektura_Teknike.md",
+      "sha256": "c9e6e865949134fd47fbbc2cf1719bc5fc97ab359b6c7ace14d90bad8bc93823",
+      "bytes": 1445
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T14_Zhvillimi__Testimi_dhe_Aktivizimi.md",
+      "sha256": "43f34568e272c4af9f568cab45037b93bb9f169502aacb93718bc87d80196f95",
+      "bytes": 1520
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T15_UI_UX.md",
+      "sha256": "ec388423b819466faab88ab55a6ae7bf08c4770c3c2cae79f989c53bf7e09a96",
+      "bytes": 1455
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T16_Skenart_Operativ.md",
+      "sha256": "14a49a15e93f136a134014dcd65097872761d7a7fbf02e92610e210b2bd40693",
+      "bytes": 1678
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T17_Rregullat_e_Biznesit___Administrimi.md",
+      "sha256": "eb3bc2bb546c5b5c5959f66ac475f6ebc0974c1d7bd630d19138d7a3d7ae3ad7",
+      "bytes": 1556
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T18_Migrimi_Final_dhe_Pranimi_Albtrix.md",
+      "sha256": "fd3c5ce214948c60510aaf03f67f4f454622f5e54d4e8c9303fd4048d2640b84",
+      "bytes": 1606
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T19_Performanca__Kapaciteti_dhe_Disponu.md",
+      "sha256": "ac5291e343c0dec099e90a3a8188052c2f009dc49564de295cb9ceac593b4a41",
+      "bytes": 1455
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T20_Automatizime_dhe_Njoftime_t_Avancua.md",
+      "sha256": "150269e66ba5a26955eff22e1f60ebad790e2957e458d246abbd54acc86d4855",
+      "bytes": 1733
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T21_Dokumentet_Digjitale_dhe_Kontratat.md",
+      "sha256": "c9c7f71daceea910bb8ec639172d4e80d6f6dd170af58c72d335d7ac7137106b",
+      "bytes": 1688
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T22_Transporti_dhe_Logjistika.md",
+      "sha256": "82aac56e7bdcf6f9ffa6d624263a7d1ed2e441ac89fea14065937f50950ba7b5",
+      "bytes": 1584
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T23_Blerjet_dhe_Prokurimi.md",
+      "sha256": "bd94f92a974f3cfb96df7035530f84aab005e3e6296008288a20d45e3a89e65e",
+      "bytes": 1630
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T24_CRM_dhe_Marrdhniet_me_Klientt.md",
+      "sha256": "8a03534daf142d45e4d0eed0171f87e34af80301d674c6285d1bfad7c3c560cf",
+      "bytes": 1586
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T25_Reklamacionet__Garancit_dhe_Pas_shi.md",
+      "sha256": "f8501a7ea17a590d5b5c34aaba7ee0dc6c4b0347058e5288df4c42323fceb2b9",
+      "bytes": 1626
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T26_Projektet_dhe_Objektet_e_Ndrtimit.md",
+      "sha256": "9e934c27fc5b2b971f75e58e4004a01a5a67b30c4de9779df07cbbd64d345293",
+      "bytes": 1615
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T27_mimet__Promocionet_dhe_Marrveshjet_.md",
+      "sha256": "dec9c216f0531b93a6e80db26dfaa8bb39f38a5497b69e22620c1fb32aaff509",
+      "bytes": 1688
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T28_Asetet_e_Brendshme_dhe_Pajisjet.md",
+      "sha256": "44c071677d36da8ba54160bf259560efc1d5eff9e35b164428bc4cd3e23becbd",
+      "bytes": 1461
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T29_Detyrat_dhe_Workflow_e_Puntorve.md",
+      "sha256": "36e48be251b2e21257c1692551e59a051a4213d669fed1717c5e1e9d520ed05b",
+      "bytes": 1507
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T30_Buxhetet__Planifikimi_Financiar_dhe.md",
+      "sha256": "6f353ad53673b5ab030e7f5f1bcd2604ffb8923438d52c1cc8b55a969cfae1d9",
+      "bytes": 1630
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T31_Kredit__Financimet_dhe_Detyrimet_Af.md",
+      "sha256": "49665fb20e61221883f28d72d7312e81d7c5a6fd7e4b33ba8884aa377663b0f0",
+      "bytes": 1609
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T32_Tatimet_dhe_Pajtueshmria_Ligjore_n_.md",
+      "sha256": "ccc7bdb4c69665324b2b0a8ce95cfe7d9b75d692eef8baf797c9a9abb182ca92",
+      "bytes": 1771
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T33_Kontrolli_i_Brendshm_Financiar.md",
+      "sha256": "29d582cb8ec5f90f05420f1b6726a11615546d19587d2f0f784d3007960d9496",
+      "bytes": 1913
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T34_Struktura_Organizative_dhe_HR.md",
+      "sha256": "9b9a8c58e5d6a9d6100f483411610b6dd2b683ef6bfd1e2dd052dd9ebf25a63e",
+      "bytes": 1826
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T35_Paneli_Strategjik_i_Drejtoris.md",
+      "sha256": "3765177a6a8358ed136792d296f1c0032ab321caaeb4bf28d54840f64bf7bd0e",
+      "bytes": 1758
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T36_Inteligjenca_Artificiale_dhe_Asiste.md",
+      "sha256": "0c67609dcac845952b76c664c3aff8b0f801d947b3ddf83c25730f173eb60267",
+      "bytes": 1837
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T37_Integrimet_e_Jashtme_dhe_temaj_eu.md",
+      "sha256": "bd88fb13f96074c0cc352022a01d16beaaf3d4db8f12fac9dc14fd343bc64bc7",
+      "bytes": 1852
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T38_Arkitektura_e_Databazs.md",
+      "sha256": "bce82e7a5440a4908dc58645006363f6277955b782982c08af69a1f0962c0232",
+      "bytes": 1875
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T39_Standardet_e_Kodit__Testet_dhe_CI_C.md",
+      "sha256": "455886b2a6c2183d31e6d0275972c5034b39538c63cb7d70f5d832f7e6f4ffd0",
+      "bytes": 1841
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T40_Fazat_e_Zhvillimit_dhe_Aktivizimi.md",
+      "sha256": "d8f0bd8f5bf23d76fb8657a2d30f5a8cf3c01bdac831dc69329b532c98b75256",
+      "bytes": 1637
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T41_Dorzimi__Pronsia_e_Kodit_dhe_Pranim.md",
+      "sha256": "02c71f7aa943199abfd538165b874cb851fc348fdb16018cdaba3cd6d0b7cac8",
+      "bytes": 1836
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T42_Mbshtetja_Teknike_dhe_Mirmbajtja.md",
+      "sha256": "cd20c25a4fc869481fbd8b28124739c6887a45d1e4be73008283d768a0dcbd5b",
+      "bytes": 1882
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T43_Kostot_Cloud_dhe_Buxheti_Operativ.md",
+      "sha256": "7b530104d792b488c85189b0a9fc9ecb08cecde36345017a277dd68e11f9db5b",
+      "bytes": 1878
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T44_Aktivizimi_Final_dhe_Kalimi_nga_Alb.md",
+      "sha256": "09ab00195dfa0593826ca73b581762c5b32fdc66894509108e4e8dca869bd17e",
+      "bytes": 1901
+    },
+    {
+      "path": "01_REQUIREMENTS/MODULE_SPECIFICATIONS/T45_Auditimi_Prfundimtar_i_Specifikimit.md",
+      "sha256": "417c6caae02319f474f7c8578e5a74669005830fb0f0bc98aa0fb1a80d969393",
+      "bytes": 1968
+    },
+    {
+      "path": "01_REQUIREMENTS/REQUIREMENTS_MATRIX.csv",
+      "sha256": "f4215081aa71ec07ade0aed9fd12d38c6c4258a8af4a17532fe9c32c08b06cca",
+      "bytes": 195750
+    },
+    {
+      "path": "01_REQUIREMENTS/TOPIC_INDEX.md",
+      "sha256": "3b4305e837b84459dd38203989cce3c3ed7492f8dc7d63a4ec49d5c65291f93b",
+      "bytes": 3440
+    },
+    {
+      "path": "02_DECISIONS/DECISIONS_README.md",
+      "sha256": "91a0fc1104e6280f6580e8fffe93a8c5d2fab47e422909cac068af4d6c5e3402",
+      "bytes": 1101
+    },
+    {
+      "path": "02_DECISIONS/DECISION_REGISTER.csv",
+      "sha256": "21ce900d343a5c8acaf0d4f395950f3a1bea5fdaf4f3392f991fc990481d5c26",
+      "bytes": 42043
+    },
+    {
+      "path": "02_DECISIONS/OPEN_ISSUES.csv",
+      "sha256": "835f1ab29427dc00fe5bac5661733d417512248b2624dd95d18a27b00e5c4389",
+      "bytes": 6123
+    },
+    {
+      "path": "03_ARCHITECTURE/DATABASE_DESIGN_CONCEPT.md",
+      "sha256": "680b1846904997dfc76eca183f5c3240dbf5f54b55c62deef88d3e3b76b98de8",
+      "bytes": 4025
+    },
+    {
+      "path": "03_ARCHITECTURE/INTEGRATION_CONTRACTS.md",
+      "sha256": "443f6cba97453b54af62505d9a994fa039d46079204693a0ad268ed510dbca53",
+      "bytes": 2677
+    },
+    {
+      "path": "03_ARCHITECTURE/SYSTEM_ARCHITECTURE.md",
+      "sha256": "77e16901b5fd4babcaaa9cd534d1d30c7eac5f76b1b30975a9afb07f1c2b2c51",
+      "bytes": 4125
+    },
+    {
+      "path": "04_BUSINESS_WORKFLOWS/END_TO_END.md",
+      "sha256": "1408c3619e8164eb6f26b69e1d6e9ff36dd836ba70f870202b8988365a2aee2a",
+      "bytes": 7160
+    },
+    {
+      "path": "05_MIGRATION/ALBTRIX_MIGRATION_PLAN.md",
+      "sha256": "256c5b4372ec94237b815ae38c23726566d0cbf7c5dddb3dfcd1cfa4bb0eeb8e",
+      "bytes": 4187
+    },
+    {
+      "path": "06_SECURITY_AND_COMPLIANCE/SECURITY_DR_PLAN.md",
+      "sha256": "932216ad142c2747ef2512553691abbdcf502930dafc7c591ee470fcdce98956",
+      "bytes": 3374
+    },
+    {
+      "path": "07_TESTING_AND_ACCEPTANCE/TEST_STRATEGY.md",
+      "sha256": "ccb37d983863a3d59eaea0761dcfd095962e4d584a82c2ecef1ebdc4adc6fca9",
+      "bytes": 4172
+    },
+    {
+      "path": "08_IMPLEMENTATION_ROADMAP/PHASED_PLAN.md",
+      "sha256": "e03f6bbc6032a24a178b519f9c24973b0f71edbb8a8ade42591cc1ce6a00b42c",
+      "bytes": 3601
+    },
+    {
+      "path": "09_PROJECT_PROGRESS/PROJECT_STATE.md",
+      "sha256": "93f56ac65d7e2cae56eb80d5ae2afb5b58ac389e80df1828dafdad2d49ecc4c5",
+      "bytes": 2659
+    },
+    {
+      "path": "10_TRACEABILITY/AUDIT_REPORT.md",
+      "sha256": "058492fa8268ad7d6279cdebb01f71527acb59af93bb9fa28288c259069eb1bf",
+      "bytes": 3480
+    },
+    {
+      "path": "10_TRACEABILITY/VERIFICATION_STATUS.json",
+      "sha256": "d7874c395e3fafa0fbea7d4464b7688559c710b20fb7b3695bee5fdda5157ca8",
+      "bytes": 1193
+    },
+    {
+      "path": "MASTER_PROMPT_CLAUDE.md",
+      "sha256": "30dd34b17636be0536ecec0ebf9e2eb715f57938eb889d79ac69f7a1f833af5c",
+      "bytes": 17657
+    },
+    {
+      "path": "README_FIRST.md",
+      "sha256": "e12128578d4421129c80c089968be3f9f8dcc3b16d9efe05ac43228726fde61f",
+      "bytes": 5629
+    },
+    {
+      "path": "TEMAJ_ERP_TRACEABILITY.xlsx",
+      "sha256": "f4024d6aadf689f814a83e847f7d9d6f85035644ab0f5604995353400f5c78ef",
+      "bytes": 72851
+    }
+  ]
+}
