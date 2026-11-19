@@ -41,3 +41,8 @@ After each Claude development session, append a dated entry including source has
 - Ndërtuar: libri me partia të dyfishta, pandryshueshmëria, storno, periudhat, mbyllja me aprovim, bilanci vërtetues.
 - Teste: 69/69 kaluan. Detajet: `docs/progress/2026-11-19-faza2-libri-kryesor.md`.
 - Llogaritë janë testuese. OPEN-03/04/05/06/10 të pandryshuara.
+
+## 2026-11-19 — Faza 4 (prototip): stoku fizik (Development, dega faza-4-stoku)
+- Ndërtuar: produktet me paketim, lotet, lëvizjet pa stok negativ, transferet me dy palë, korrigjimet me aprovim.
+- Teste: 96/96 kaluan. Detajet: `docs/progress/2026-11-19-faza4-stoku.md`.
+- Vetëm sasi; produktet janë testuese. OPEN-03/21/22 të pandryshuara.
