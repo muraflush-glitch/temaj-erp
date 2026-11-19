@@ -71,3 +71,8 @@ After each Claude development session, append a dated entry including source has
 ## 2026-11-19 — Formularët e mbetur (Development)
 - Ndërtuar: ekranet për produktet dhe çmimet, përdoruesit dhe rolet, transferet dhe korrigjimet e stokut.
 - Teste: 160/160 + 23 hapa në shfletues. Detajet: `docs/progress/2026-11-19-formularet-e-mbetur.md`.
+
+## 2026-11-19 — Kthimet, pagesat ndaj furnitorëve, raportet (Development)
+- Ndërtuar: nota krediti me aprovim, detyrime dhe pagesa furnitorësh me aprovim, katër raporte.
+- Teste: 173/173 + 26 hapa në shfletues. Detajet: `docs/progress/2026-11-19-kthimet-furnitoret-raportet.md`.
+- Blerjet regjistrohen në llogari kalimtare (provizore); stoku mbetet pa vlerë (OPEN-03).

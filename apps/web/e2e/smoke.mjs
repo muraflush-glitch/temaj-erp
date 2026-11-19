@@ -84,6 +84,9 @@ try {
   await waitText('Faturë nr. 1/'); await waitText('DOKUMENT PROVIZOR'); await waitText('Për pagesë');
   if (!(await text()).includes('40,36 €')) throw new Error('Fatura e printueshme nuk tregon 40,36 €');
   step('fatura e printueshme hapet, me vulën "dokument provizor"');
+  await type('#ret1', '1,44'); await type('#retreason', 'Klienti ktheu një kuti të pahapur'); await clickButton('Kërko notë krediti');
+  await waitText('Kërkesa për notë krediti u dërgua për aprovim');
+  step('kthimi i mallit u kërkua nga fatura dhe pret aprovimin');
 
   await page.goto(`${BASE}/arka`, { waitUntil: 'networkidle0' }); await waitText('Duhet të jenë në arkë: 40,36 €');
   await type('input[inputmode="decimal"]', '40,36'); await clickButton('Mbyll arkën'); await waitText('Arka u mbyll pa diferencë');
@@ -97,6 +100,10 @@ try {
   await page.waitForSelector('#grdoc'); await type('#grdoc', 'CMR-E2E-1'); await clickButton('Prano mallin e mbetur'); await waitText('Malli u pranua dhe hyri në stok');
   await type('#sinv', 'INV-E2E-1'); await clickButton('Regjistro faturën'); await waitText('Fatura përputhet me porosinë dhe pranimin.');
   step('blerja nga ekrani: furnitor → porosi 225 € → pranim malli → faturë që përputhet');
+  const supId = await page.evaluate(() => [...document.querySelectorAll('#balsup option')].find((o) => o.textContent.includes('FUR-E2E')).value);
+  await page.select('#balsup', supId); await waitText('Detyrimi i hapur: 225,00 €');
+  await type('#payamt', '100'); await type('#payreason', 'Pagesë e pjesshme nga ekrani'); await clickButton('Kërko pagesën'); await waitText('Pagesa u dërgua për aprovim');
+  step('borxhi ndaj furnitorit (225 €) shfaqet; pagesa u kërkua dhe pret aprovimin e financës');
 
   await page.goto(`${BASE}/produktet`, { waitUntil: 'networkidle0' });
   await type('#psku', 'e2e-lavaman'); await type('#pname', 'Lavaman nga shfletuesi'); await page.select('#puom', 'PIECE');
@@ -118,6 +125,11 @@ try {
   await clickButton('Krijo përdoruesin'); await waitText('Përdoruesi u krijua.'); await waitText('punonjes.e2e@temaj.test');
   await type('#greason', 'Rol për provë nga ekrani'); await clickButton('Kërko rolin'); await waitText('u dërgua për aprovim te një person tjetër');
   step('përdorues i ri u krijua; roli u kërkua dhe pret aprovimin e një personi tjetër');
+
+  await page.goto(`${BASE}/raportet`, { waitUntil: 'networkidle0' }); await waitText('Shitjet sipas degës'); await waitText('Dega Prishtinë');
+  const rep = await text();
+  if (!rep.includes('34,20 €') || !rep.includes('Furnitor nga shfletuesi') || !rep.includes('TEST-PLL-6060')) throw new Error('Raportet nuk i tregojnë shitjet, detyrimet ose lëvizjet');
+  step('raportet tregojnë shitjet e degës (34,20 € neto), detyrimin ndaj furnitorit dhe lëvizjet e stokut');
 
   for (const path of ['/aprovimet', '/siguria', '/klientet']) {
     await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle0' });

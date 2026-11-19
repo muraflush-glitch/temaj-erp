@@ -40,6 +40,7 @@ const PG_MESSAGES: Record<string, [string, string, number]> = {
   OVER_ALLOCATION: ['OVER_ALLOCATION', 'Pagesa e shpërndarë e kalon vlerën e faturës ose të pagesës', 422],
   CASH_SESSION_NOT_OPEN: ['CASH_SESSION_NOT_OPEN', 'Arka e degës nuk është e hapur', 409],
   CASH_SESSION_IMMUTABLE: ['IMMUTABLE', 'Seanca e mbyllur e arkës nuk ndryshohet', 409],
+  OVER_CREDIT: ['OVER_CREDIT', 'Sasia e kredituar e kalon sasinë e faturuar', 422],
   AUDIT_LOG_APPEND_ONLY: ['IMMUTABLE', 'Audit trail nuk mund të ndryshohet', 409],
 };
 

@@ -35,6 +35,7 @@ Specifikimi i plotë (880 kërkesa, 172 vendime, 24 çështje të hapura) ësht�
 | Formularë në ekran dhe test me Chrome | `apps/web`, `scripts/e2e-local.sh` |
 | Arka ditore (**PROVIZOR**): hapje, mbyllje me numërim, diferenca me aprovim | migrimi 008, `src/cash` |
 | Ngritja në server provë (Docker + HTTPS), ende e paprovuar | `deploy/README.md` |
+| Kthimet me nota krediti, pagesat ndaj furnitorëve (me aprovim), raportet | migrimet 009–010, `src/billing`, `src/purchasing`, `src/reports` |
 | Njoftimet: **SIMULIM vetëm në Development** (`dev_notification_sink`); ofruesi real pret OPEN-18/19 | `src/outbox/dev-notification.sink.ts` |
 
 ## Nisja lokale

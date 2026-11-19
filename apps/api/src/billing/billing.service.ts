@@ -1,5 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { Pool } from 'pg';
+import { ApprovalsService } from '../approvals/approvals.service';
 import { AuditService } from '../audit/audit.service';
 import { PermissionService } from '../auth/permission.service';
 import { DomainError, forbidden, notFound } from '../common/errors';
@@ -11,6 +12,8 @@ import { LedgerService } from '../ledger/ledger.service';
 
 type Role = 'RECEIVABLE' | 'SALES_REVENUE' | 'VAT_OUTPUT' | 'CASH' | 'BANK' | 'CUSTOMER_ADVANCES';
 const MONEY = /^\d{1,15}(\.\d{1,2})?$/;
+const QTY = /^\d{1,15}(\.\d{1,4})?$/;
+export const CREDIT_NOTE = 'sales.credit_note';
 
 /** Production nuk niset sa kohë ka rregulla, llogari ose lidhje provizore (të pamiratuara nga kontabilisti). */
 export async function assertNoProvisionalPolicies(pool: Pool): Promise<void> {
@@ -27,14 +30,93 @@ export async function assertNoProvisionalPolicies(pool: Pool): Promise<void> {
  * në të njëjtin transaksion dhe nuk ndryshohet më. Arka/banka rritet vetëm kur regjistrohet një arkëtim real.
  */
 @Injectable()
-export class BillingService {
+export class BillingService implements OnModuleInit {
   constructor(
     @Inject(DB) private readonly db: Db,
     private readonly perms: PermissionService,
     private readonly audit: AuditService,
     private readonly ledger: LedgerService,
     private readonly cash: CashService,
+    private readonly approvals: ApprovalsService,
   ) {}
+
+  onModuleInit(): void {
+    // Nota e kreditit (kthim malli ose korrigjim fature) lëshohet vetëm pas aprovimit nga një person tjetër.
+    this.approvals.register(CREDIT_NOTE, {
+      requestPermission: 'sales.credit_note.request',
+      validate: async (tx, payload) => { await this.creditLines(tx, Number(payload['invoiceId']), payload['lines'] as { lineNo: number; qty: string }[]); },
+      execute: async (tx, req) => { await this.issueCreditNote(tx, req.id, Number(req.requested_by), req.reason, req.payload); },
+    });
+  }
+
+  /** Llogarit vlerat e kreditit për çdo rresht, në përpjesëtim me sasinë e kthyer; refuzon sasinë mbi të faturuarën. */
+  private async creditLines(tx: Tx, invoiceId: number, lines: { lineNo: number; qty: string }[]) {
+    if (!Array.isArray(lines) || lines.length === 0) throw new DomainError('VALIDATION', 'Duhet së paku një rresht');
+    const out: { lineNo: number; qty: string; net: string; vat: string; orderLineNo: number; productId: string }[] = [];
+    for (const l of lines) {
+      if (!QTY.test(String(l.qty)) || /^0+(\.0+)?$/.test(String(l.qty))) throw new DomainError('VALIDATION', 'Sasia duhet të jetë numër dhjetor pozitiv');
+      const r = await one<{ ok: boolean; net: string; vat: string; order_line_no: number; product_id: string }>(tx,
+        `SELECT ($3::numeric <= il.qty - COALESCE((SELECT sum(c.qty) FROM credit_note_line c WHERE c.invoice_id = il.invoice_id AND c.invoice_line_no = il.line_no), 0)) AS ok,
+                round(il.net * $3::numeric / il.qty, 2)::text AS net, round(il.vat * $3::numeric / il.qty, 2)::text AS vat, il.order_line_no, il.product_id
+           FROM sales_invoice_line il WHERE il.invoice_id = $1 AND il.line_no = $2`, [invoiceId, l.lineNo, l.qty]);
+      if (!r) throw notFound(`Rreshti ${l.lineNo} i faturës`);
+      if (!r.ok) throw new DomainError('OVER_CREDIT', 'Sasia e kthyer nuk mund ta kalojë sasinë e faturuar (duke llogaritur kthimet e mëparshme)', 422);
+      out.push({ lineNo: l.lineNo, qty: String(l.qty), net: r.net, vat: r.vat, orderLineNo: r.order_line_no, productId: r.product_id });
+    }
+    return out;
+  }
+
+  async requestCreditNote(actor: AuthUser, invoiceId: number, input: { lines: { lineNo: number; qty: string }[]; restock: boolean; reason: string; idempotencyKey: string }) {
+    const inv = await one<{ branch_id: string }>(this.db, 'SELECT branch_id FROM sales_invoice WHERE id = $1', [invoiceId]);
+    if (!inv) throw notFound('Fatura');
+    // Leja kontrollohet para çdo gjëje tjetër, që pa leje të mos merret asnjë informacion mbi faturën.
+    if (!(await this.perms.has(actor.id, 'sales.credit_note.request', Number(inv.branch_id)))) throw forbidden();
+    const lines = await withTransaction(this.db, (tx) => this.creditLines(tx, invoiceId, input.lines));
+    const total = await one<{ t: string }>(this.db, 'SELECT sum(x)::text AS t FROM unnest($1::numeric[]) AS t(x)', [lines.flatMap((l) => [l.net, l.vat])]);
+    return this.approvals.request(actor, { actionCode: CREDIT_NOTE, branchId: Number(inv.branch_id), amount: total?.t ?? '0', reason: input.reason,
+      idempotencyKey: input.idempotencyKey, payload: { invoiceId, lines: input.lines, restock: input.restock } });
+  }
+
+  private async issueCreditNote(tx: Tx, approvalRequestId: string, userId: number, reason: string, payload: Record<string, unknown>): Promise<void> {
+    const invoiceId = Number(payload['invoiceId']); const restock = payload['restock'] === true;
+    const inv = await one<{ legal_entity_id: string; customer_id: string; branch_id: string; order_id: string; warehouse_id: string; invoice_no: string; today: string }>(tx,
+      `SELECT i.legal_entity_id, i.customer_id, i.branch_id, i.order_id, o.warehouse_id, i.invoice_no, to_char(CURRENT_DATE, 'YYYY-MM-DD') AS today
+         FROM sales_invoice i JOIN sales_order o ON o.id = i.order_id WHERE i.id = $1 FOR UPDATE OF i`, [invoiceId]);
+    if (!inv) throw notFound('Fatura');
+    const lines = await this.creditLines(tx, invoiceId, payload['lines'] as { lineNo: number; qty: string }[]);
+    const tot = await one<{ net: string; vat: string; gross: string }>(tx,
+      'SELECT sum(n)::text AS net, sum(v)::text AS vat, (sum(n) + sum(v))::text AS gross FROM unnest($1::numeric[], $2::numeric[]) AS t(n, v)', [lines.map((l) => l.net), lines.map((l) => l.vat)]);
+    if (!tot) throw new Error('Totalet mungojnë');
+    const entityId = Number(inv.legal_entity_id); const branchId = Number(inv.branch_id);
+    const acc = await this.accounts(tx, entityId, ['RECEIVABLE', 'SALES_REVENUE', 'VAT_OUTPUT']);
+    // Regjistrimi i kundërt i faturës, vetëm për pjesën e kredituar.
+    const entryId = await this.ledger.postSystemEntry(tx, userId, {
+      legalEntityId: entityId, entryDate: inv.today, description: `Notë krediti për faturën nr. ${inv.invoice_no}`, sourceType: 'CREDIT_NOTE', sourceRef: String(invoiceId),
+      idempotencyKey: `credit-note:${approvalRequestId}`,
+      lines: [
+        { accountId: acc.SALES_REVENUE, branchId, debit: tot.net, credit: '0' },
+        { accountId: acc.VAT_OUTPUT, branchId, debit: tot.vat, credit: '0' },
+        { accountId: acc.RECEIVABLE, branchId, debit: '0', credit: tot.gross },
+      ],
+    });
+    const cn = await one<{ id: string; credit_no: string }>(tx,
+      `INSERT INTO credit_note(legal_entity_id, fiscal_year, invoice_id, customer_id, branch_id, credit_date, reason, restocked, net, vat, gross, journal_entry_id, approval_request_id, requested_by)
+       VALUES ($1, 0, $2, $3, $4, $5::date, $6, $7, $8::numeric, $9::numeric, $10::numeric, $11, $12, $13) RETURNING id, credit_no`,
+      [entityId, invoiceId, inv.customer_id, branchId, inv.today, reason, restock, tot.net, tot.vat, tot.gross, entryId, approvalRequestId, userId]);
+    for (const l of lines) {
+      await tx.query('INSERT INTO credit_note_line(credit_note_id, invoice_id, invoice_line_no, qty, net, vat) VALUES ($1, $2, $3, $4::numeric, $5::numeric, $6::numeric)', [cn?.id, invoiceId, l.lineNo, l.qty, l.net, l.vat]);
+      if (restock) {
+        // Malli i kthyer hyn në magazinën e porosisë, me të njëjtin lot.
+        const ol = await one<{ lot_id: string | null }>(tx, 'SELECT lot_id FROM sales_order_line WHERE order_id = $1 AND line_no = $2', [inv.order_id, l.orderLineNo]);
+        await tx.query(
+          `INSERT INTO stock_movement(type, warehouse_id, product_id, lot_id, qty, document_ref, reason, created_by, idempotency_key)
+           VALUES ('CUSTOMER_RETURN', $1, $2, $3, $4::numeric, $5, $6, $7, $8)`,
+          [inv.warehouse_id, l.productId, ol?.lot_id ?? null, l.qty, `NK-${cn?.credit_no}`, reason, userId, `credit-note:${cn?.id}:${l.lineNo}`]);
+      }
+    }
+    await this.audit.record(tx, { actorUserId: userId, action: 'sales.credit_note_issued', entityType: 'credit_note', entityId: cn?.id, branchId,
+      details: { invoiceId, creditNo: Number(cn?.credit_no), gross: tot.gross, restock, approvalRequestId: Number(approvalRequestId) } });
+  }
 
   private async accounts(tx: Tx, entityId: number, roles: Role[]): Promise<Record<Role, number>> {
     const r = await tx.query<{ role: Role; account_id: string }>('SELECT role, account_id FROM account_role WHERE legal_entity_id = $1 AND role = ANY($2)', [entityId, roles]);
@@ -191,9 +273,12 @@ export class BillingService {
     if (!i) throw notFound('Fatura');
     if (!(await this.perms.has(actor.id, 'sales.read', Number(i.branch_id)))) throw forbidden();
     const lines = await this.db.query(
-      `SELECT l.line_no, p.sku, p.name, p.base_uom, l.qty::text, l.unit_price::text, l.discount_pct::text, l.net::text, l.vat::text
+      `SELECT l.line_no, p.sku, p.name, p.base_uom, l.qty::text, l.unit_price::text, l.discount_pct::text, l.net::text, l.vat::text,
+              COALESCE((SELECT sum(c.qty) FROM credit_note_line c WHERE c.invoice_id = l.invoice_id AND c.invoice_line_no = l.line_no), 0)::text AS qty_credited
          FROM sales_invoice_line l JOIN product p ON p.id = l.product_id WHERE l.invoice_id = $1 ORDER BY l.line_no`, [invoiceId]);
-    return { ...i, lines: lines.rows };
+    const credits = await this.db.query(
+      `SELECT id, credit_no, fiscal_year, to_char(credit_date, 'YYYY-MM-DD') AS credit_date, reason, restocked, gross::text FROM credit_note WHERE invoice_id = $1 ORDER BY id`, [invoiceId]);
+    return { ...i, lines: lines.rows, creditNotes: credits.rows };
   }
 
   async invoices(actor: AuthUser) {
